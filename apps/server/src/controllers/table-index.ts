@@ -1,8 +1,5 @@
 import { Request, Response } from "express";
-
-const getAllTableIndexes = async (req: Request, res: Response) => {};
-
-const getTableIndexById = async (req: Request, res: Response) => {};
+import { prisma } from "../lib/prisma";
 
 const createTableIndex = async (req: Request, res: Response) => {};
 
@@ -10,10 +7,4 @@ const updateTableIndex = async (req: Request, res: Response) => {};
 
 const deleteTableIndex = async (req: Request, res: Response) => {};
 
-export {
-  getAllTableIndexes,
-  getTableIndexById,
-  createTableIndex,
-  updateTableIndex,
-  deleteTableIndex,
-};
+export { createTableIndex, updateTableIndex, deleteTableIndex };
