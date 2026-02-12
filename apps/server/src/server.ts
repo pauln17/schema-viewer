@@ -9,11 +9,15 @@ import cors from "cors";
 import { authMiddleware } from "./middleware/auth";
 
 // Route Imports
+import userRoutes from "./routes/user";
 import schemaRoutes from "./routes/schema";
 import schemaCollaborationRoutes from "./routes/schema-collaboration";
 import schemaTableRoutes from "./routes/schema-table";
 import tableColumnRoutes from "./routes/table-column";
+import tableIndexRoutes from "./routes/table-index";
+import tableColumnConstraintRoutes from "./routes/table-column-constraint";
 import columnRelationRoutes from "./routes/column-relation";
+import userRoutes from "./routes/user";
 
 const app = express();
 
@@ -40,11 +44,17 @@ app.use(express.json());
 app.use(authMiddleware);
 
 // Routes
+app.use("/users", userRoutes);
 app.use("/schemas", schemaRoutes);
 app.use("/schema-collaborations", schemaCollaborationRoutes);
 app.use("/schema-tables", schemaTableRoutes);
 app.use("/table-columns", tableColumnRoutes);
+app.use("/table-indexes", tableIndexRoutes);
+app.use("/table-column-constraints", tableColumnConstraintRoutes);
 app.use("/column-relations", columnRelationRoutes);
+app.use("/users", userRoutes);
+app.use("/table-index", tableColumnRoutes);
+app.use("/table-column-constraints", tableColumnConstraintRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({ Server: "200" });

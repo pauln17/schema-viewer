@@ -36,32 +36,44 @@ model Schema {
   userId               String
   name                 String
   isPublished          Boolean               @default(false)
-  schemaTable          SchemaTable[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
+  schemaTables         SchemaTable[]
   schemaCollaborations SchemaCollaboration[]
 
+  @@index([userId])
   @@map("schema")
 }
 
 model SchemaCollaboration {
-  id       String           @id @default(uuid())
-  schema   Schema           @relation(fields: [schemaId], references: [id], onDelete: Cascade)
-  schemaId String
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId   String
-  role     CollaboratorRole @default(VIEWER)
+  id             String           @id @default(uuid())
+  schema         Schema           @relation(fields: [schemaId], references: [id], onDelete: Cascade)
+  schemaId       String
+  user           User             @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
+  collaboratorId String
+  role           CollaboratorRole @default(VIEWER)
 
-  @@unique([schemaId, userId])
+  @@unique([schemaId, collaboratorId])
+  @@index([collaboratorId])
   @@map("schema-collaboration")
 }
 
 model SchemaTable {
-  id          String        @id @default(uuid())
-  schema      Schema        @relation(fields: [schemaId], references: [id])
-  schemaId    String
-  tableColumn TableColumn[]
+  id       String @id @default(uuid())
+  schema   Schema @relation(fields: [schemaId], references: [id])
+  schemaId String
 
+  name String
+
+  // Stored Table Position (Initially Auto Layout)
+  positionX Float?
+  positionY Float?
+
+  tableColumn            TableColumn[]
+  tableIndex             TableIndex[]
+  tableColumnConstraints TableColumnConstraint[]
+
+  @@index([schemaId])
   @@map("schema-table")
 }
 
@@ -70,21 +82,62 @@ model TableColumn {
   schemaTable   SchemaTable @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
   schemaTableId String
 
-  // A relation is specified because there are two instances of ColumnReferences[] -- one for outgoing, one for incoming
-  outgoingReferences ColumnRelation[] @relation("SourceColumn") // Points to other columns
-  incomingReferences ColumnRelation[] @relation("TargetColumn") // Other columns can point here to reference
+  name          String
+  dataType      String       // actual database type
+  order         Int          @default(0) // controls vertical order inside table
 
+  // Relations
+  outgoingReferences     ColumnRelation[] @relation("SourceColumn")
+  incomingReferences     ColumnRelation[] @relation("TargetColumn")
+
+  // Constraints (PK, UNIQUE, NOT NULL, DEFAULT, CHECK, FK)
+  tableColumnConstraints TableColumnConstraint[]
+
+  @@index([schemaTableId])
   @@map("table-column")
 }
 
 model ColumnRelation {
   id             String      @id @default(uuid())
-  sourceColumn   TableColumn @relation("SourceColumn", fields: [sourceColumnId], references: [id], onDelete: Cascade) // The source column that is being "referenced" by another column
+  sourceColumn   TableColumn @relation("SourceColumn", fields: [sourceColumnId], references: [id])
   sourceColumnId String
-  targetColumn   TableColumn @relation("TargetColumn", fields: [targetColumnId], references: [id], onDelete: Cascade) // The target column that is referencing a column of the target table
+  targetColumn   TableColumn @relation("TargetColumn", fields: [targetColumnId], references: [id])
   targetColumnId String
 
+  onDelete       String?     // "CASCADE", "SET NULL", "RESTRICT", etc.
+  onUpdate       String?     // "CASCADE", "SET NULL", "RESTRICT", etc.
+
+  @@index([sourceColumnId])
+  @@index([targetColumnId])
   @@map("column-relation")
+}
+
+model TableIndex {
+  id            String      @id @default(uuid())
+  schemaTable   SchemaTable @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
+  schemaTableId String
+
+  name           String
+  indexedColumnIds String[] // Ordered Column Names
+
+  @@index([schemaTableId])
+  @@map("table-index")
+}
+
+model TableColumnConstraint {
+  id            String      @id @default(uuid())
+  schemaTable   SchemaTable @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
+  schemaTableId String
+
+  tableColumn   TableColumn? @relation(fields: [tableColumnId], references: [id])
+  tableColumnId String?
+
+  name       String
+  type       ConstraintType
+  expression String? // Raw SQL Condition (Check), Optional for PK, FK, NOT NULL
+
+  @@index([schemaTableId])
+  @@map("table-column-constraint")
 }
 
 model Session {
@@ -140,4 +193,13 @@ enum Role {
 enum CollaboratorRole {
   VIEWER
   EDITOR
+}
+
+enum ConstraintType {
+  PRIMARY_KEY
+  FOREIGN_KEY
+  DEFAULT
+  UNIQUE
+  CHECK
+  NOT_NULL
 }

@@ -9,10 +9,10 @@
   ],
   "scripts": {
     "lint": "eslint .",
-    "dev:client": "npm run dev -w client",
-    "dev:server": "npm run dev -w server",
-    "build:client": "npm run build -w client",
-    "build:server": "npm run build -w server"
+    "dev:c": "npm run dev -w client",
+    "dev:s": "npm run dev -w server",
+    "build:c": "npm run build -w client",
+    "build:s": "npm run build -w server"
   },
   "author": "",
   "license": "ISC",

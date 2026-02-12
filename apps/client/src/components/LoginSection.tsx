@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { authClient, AuthInput } from "@/lib/auth-client";
 
-type loginData = Omit<AuthInput, "name">;
+type LoginData = Omit<AuthInput, "name">;
 
 export default function LoginSection(): ReactNode {
   const [email, setEmail] = useState("");
@@ -11,7 +11,7 @@ export default function LoginSection(): ReactNode {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const loginData: loginData = {
+  const loginData: LoginData = {
     email: email,
     password: password,
   };

@@ -1,5 +1,7 @@
 import { Router } from "express";
+import { authorizeSchema } from "../middleware/authorizeSchema";
 import {
+  getSchemaCollaborationsBySchemaId,
   createSchemaCollaboration,
   updateSchemaCollaboration,
   deleteSchemaCollaboration,
@@ -7,8 +9,9 @@ import {
 
 const router = Router();
 
-router.post("/", createSchemaCollaboration);
-router.put("/:id", updateSchemaCollaboration);
-router.delete("/:id", deleteSchemaCollaboration);
+router.get("/:schemaId", authorizeSchema("VIEWER"), getSchemaCollaborationsBySchemaId);
+router.post("/", authorizeSchema("OWNER"), createSchemaCollaboration);
+router.put("/:id", authorizeSchema("OWNER"), updateSchemaCollaboration);
+router.delete("/:id", authorizeSchema("OWNER"), deleteSchemaCollaboration);
 
 export default router;

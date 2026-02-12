@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authorizeSchema } from "../middleware/authorizeSchema";
 import {
   getAllSchemaTables,
   getSchemaTableById,
@@ -11,8 +12,8 @@ const router = Router();
 
 router.get("/", getAllSchemaTables);
 router.get("/:id", getSchemaTableById);
-router.post("/", createSchemaTable);
-router.put("/:id", updateSchemaTable);
-router.delete("/:id", deleteSchemaTable);
+router.post("/", authorizeSchema("EDITOR"), createSchemaTable);
+router.put("/:id", authorizeSchema("EDITOR"), updateSchemaTable);
+router.delete("/:id", authorizeSchema("EDITOR"), deleteSchemaTable);
 
 export default router;

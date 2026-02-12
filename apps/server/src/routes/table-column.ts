@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authorizeSchema } from "../middleware/authorizeSchema";
 import {
   getColumnById,
   getColumnsByTableId,
@@ -9,10 +10,10 @@ import {
 
 const router = Router();
 
-router.get("/:id", getColumnById);
-router.get("/table/:id", getColumnsByTableId);
-router.post("/", createColumn);
-router.put("/:id", updateColumn);
-router.delete("/:id", deleteColumn);
+router.get("/:id", authorizeSchema("VIEWER"), getColumnById);
+router.get("/table/:id", authorizeSchema("VIEWER"), getColumnsByTableId);
+router.post("/", authorizeSchema("EDITOR"), createColumn);
+router.put("/:id", authorizeSchema("EDITOR"), updateColumn);
+router.delete("/:id", authorizeSchema("EDITOR"), deleteColumn);
 
 export default router;

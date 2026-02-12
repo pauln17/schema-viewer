@@ -1,13 +1,16 @@
 import { Request, Response } from "express";
-import { prisma } from "../lib/prisma";
+import { prisma } from "src/lib/prisma";
 
-const createSchemaCollaboration = async (req: Request, res: Response) => {};
+const getSchemaCollaborationsBySchemaId = async (req: Request, res: Response) => { };
 
-const updateSchemaCollaboration = async (req: Request, res: Response) => {};
+const createSchemaCollaboration = async (req: Request, res: Response) => { };
 
-const deleteSchemaCollaboration = async (req: Request, res: Response) => {};
+const updateSchemaCollaboration = async (req: Request, res: Response) => { };
+
+const deleteSchemaCollaboration = async (req: Request, res: Response) => { };
 
 export {
+  getSchemaCollaborationsBySchemaId,
   createSchemaCollaboration,
   updateSchemaCollaboration,
   deleteSchemaCollaboration,

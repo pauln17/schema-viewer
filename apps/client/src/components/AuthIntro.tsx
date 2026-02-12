@@ -7,7 +7,7 @@ export default function AuthIntro(): ReactNode {
       <div></div>
       <div className="flex flex-col items-center justify-center max-w-md">
         <Link href="/" className="text-white text-4xl mb-2">
-          Schema Visualizer
+          Schema Viewer
         </Link>
         <p className="text-center mb-8">
           Expose invisible schema problems before they surface in production

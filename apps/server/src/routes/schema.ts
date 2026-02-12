@@ -1,9 +1,9 @@
 import { Router } from "express";
+import { authorizeSchema } from "../middleware/authorizeSchema";
 import {
   getAllSchemas,
+  getAccessibleSchemas,
   getSchemaById,
-  getSchemaByUserId,
-  getSharedToUserSchemas,
   createSchema,
   updateSchema,
   deleteSchema,
@@ -11,12 +11,11 @@ import {
 
 const router = Router();
 
-router.get("/", getAllSchemas);
-router.get("/:id", getSchemaById);
-router.get("/:Id", getSchemaByUserId);
-router.get("/:Id", getSharedToUserSchemas);
+router.get("/admin", getAllSchemas);
+router.get("/", getAccessibleSchemas);
+router.get("/:id", authorizeSchema("VIEWER"), getSchemaById);
 router.post("/", createSchema);
-router.put("/:id", updateSchema);
-router.delete("/:id", deleteSchema);
+router.put("/:id", authorizeSchema("OWNER"), updateSchema);
+router.delete("/:id", authorizeSchema("OWNER"), deleteSchema);
 
 export default router;

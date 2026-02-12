@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authorizeSchema } from "../middleware/authorizeSchema";
 import {
   createColumnRelation,
   updateColumnRelation,
@@ -7,8 +8,8 @@ import {
 
 const router = Router();
 
-router.post("/", createColumnRelation);
-router.put("/:id", updateColumnRelation);
-router.delete("/:id", deleteColumnRelation);
+router.post("/", authorizeSchema("EDITOR"), createColumnRelation);
+router.put("/:id", authorizeSchema("EDITOR"), updateColumnRelation);
+router.delete("/:id", authorizeSchema("EDITOR"), deleteColumnRelation);
 
 export default router;
