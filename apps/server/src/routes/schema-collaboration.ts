@@ -9,7 +9,6 @@ import {
 
 const router = Router();
 
-router.get("/:schemaId", authorizeSchema("VIEWER"), getSchemaCollaborationsBySchemaId);
 router.post("/", authorizeSchema("OWNER"), createSchemaCollaboration);
 router.put("/:id", authorizeSchema("OWNER"), updateSchemaCollaboration);
 router.delete("/:id", authorizeSchema("OWNER"), deleteSchemaCollaboration);

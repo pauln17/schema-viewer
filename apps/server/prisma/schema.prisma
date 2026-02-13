@@ -81,13 +81,13 @@ model TableColumn {
   schemaTable   SchemaTable @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
   schemaTableId String
 
-  name     String
-  dataType String // actual database type
-  order    Int    @default(0) // controls vertical order inside table
+  name          String
+  dataType      String       // actual database type
+  order         Int          @default(0) // controls vertical order inside table
 
   // Relations
-  outgoingReferences ColumnRelation[] @relation("SourceColumn")
-  incomingReferences ColumnRelation[] @relation("TargetColumn")
+  outgoingReferences     ColumnRelation[] @relation("SourceColumn")
+  incomingReferences     ColumnRelation[] @relation("TargetColumn")
 
   // Constraints (PK, UNIQUE, NOT NULL, DEFAULT, CHECK, FK)
   tableColumnConstraints TableColumnConstraint[]
@@ -103,8 +103,8 @@ model ColumnRelation {
   targetColumn   TableColumn @relation("TargetColumn", fields: [targetColumnId], references: [id])
   targetColumnId String
 
-  onDelete String? // "CASCADE", "SET NULL", "RESTRICT", etc.
-  onUpdate String? // "CASCADE", "SET NULL", "RESTRICT", etc.
+  onDelete       String?     // "CASCADE", "SET NULL", "RESTRICT", etc.
+  onUpdate       String?     // "CASCADE", "SET NULL", "RESTRICT", etc.
 
   @@index([sourceColumnId])
   @@index([targetColumnId])
@@ -116,7 +116,7 @@ model TableIndex {
   schemaTable   SchemaTable @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
   schemaTableId String
 
-  name             String
+  name           String
   indexedColumnIds String[] // Ordered Column Names
 
   @@index([schemaTableId])
@@ -127,11 +127,9 @@ model TableColumnConstraint {
   id            String      @id @default(uuid())
   schemaTable   SchemaTable @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
   schemaTableId String
-
   tableColumn   TableColumn? @relation(fields: [tableColumnId], references: [id])
   tableColumnId String?
 
-  name       String
   type       ConstraintType
   expression String? // Raw SQL Condition (Check), Optional for PK, FK, NOT NULL
 

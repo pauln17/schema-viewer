@@ -1,4 +1,4 @@
-import { prisma } from "src/lib/prisma";
+import { prisma } from "../lib/prisma";
 import { Request, Response, NextFunction } from "express";
 
 const ROLE_RANK = { VIEWER: 1, EDITOR: 2, OWNER: 3 } as const;

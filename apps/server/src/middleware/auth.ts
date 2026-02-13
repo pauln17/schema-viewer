@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { auth } from '../lib/auth';
 
+// Verify User's Identity
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const session = await auth.api.getSession({
