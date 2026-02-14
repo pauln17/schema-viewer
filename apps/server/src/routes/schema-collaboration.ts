@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { authorizeSchema } from "../middleware/authorizeSchema";
 import {
-  getSchemaCollaborationsBySchemaId,
   createSchemaCollaboration,
   updateSchemaCollaboration,
   deleteSchemaCollaboration,
