@@ -26,6 +26,7 @@ export const authorizeSchema = (minRole: MinRole) => {
 
       if (ROLE_RANK[userRole] < ROLE_RANK[minRole]) return res.status(403).json({ error: "Forbidden" });
 
+      req.schema = schema;
       next();
     } catch (error) {
       console.error(error);

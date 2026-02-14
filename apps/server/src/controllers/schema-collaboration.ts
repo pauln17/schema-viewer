@@ -67,7 +67,6 @@ const deleteSchemaCollaboration = async (req: Request, res: Response) => {
 };
 
 export {
-  getSchemaCollaborationsBySchemaId,
   createSchemaCollaboration,
   updateSchemaCollaboration,
   deleteSchemaCollaboration,

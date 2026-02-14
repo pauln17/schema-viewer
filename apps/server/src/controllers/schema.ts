@@ -20,6 +20,10 @@ const getSchemaById = async (req: Request, res: Response) => {
   try {
     const schema = await prisma.schema.findUnique({
       where: { id },
+      include: {
+        schemaTables: true,
+        schemaCollaborations: true,
+      },
     });
     return res.status(200).json(schema);
   } catch (error) {
@@ -38,6 +42,10 @@ const getAccessibleSchemas = async (req: Request, res: Response) => {
           { userId: req.user!.id },
           { schemaCollaborations: { some: { collaboratorId: req.user!.id } } },
         ]
+      },
+      include: {
+        schemaTables: true,
+        schemaCollaborations: true,
       },
     });
     return res.status(200).json(schemas);
@@ -71,7 +79,7 @@ const updateSchema = async (req: Request, res: Response) => {
   try {
     const schema = await prisma.schema.update({
       where: { id },
-      data: data,
+      data,
     });
     return res.status(200).json(schema);
   } catch (error) {
