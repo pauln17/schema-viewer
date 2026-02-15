@@ -30,4 +30,4 @@ const deleteTableIndex = async (req: Request, res: Response) => {
     }
 };
 
-export { createTableIndex, updateTableIndex, deleteTableIndex };
+export { createTableIndex, deleteTableIndex };
