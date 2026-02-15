@@ -3,6 +3,6 @@ import { lookupUserByEmail } from "../controllers/user";
 
 const router = Router();
 
-router.get("/lookup", lookupUserByEmail);
+router.get("/:email", lookupUserByEmail);
 
 export default router;

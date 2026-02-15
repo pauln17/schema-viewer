@@ -6,7 +6,7 @@ type MinRole = keyof typeof ROLE_RANK;
 
 export const authorizeSchema = (minRole: MinRole) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const schemaId = req.params.schemaId || req.params.id || req.body.schemaId || req.query.schemaId;
+    const schemaId = req.params.schemaId || req.body.schemaId || req.params.id || req.query.schemaId;
     if (!schemaId || typeof schemaId !== "string") return res.status(400).json({ error: "Schema ID Required" });
 
     try {

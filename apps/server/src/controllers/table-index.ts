@@ -2,16 +2,19 @@ import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 
 const createTableIndex = async (req: Request, res: Response) => {
-    const columnId = req.params.columnId;
-    if (!columnId || typeof columnId !== "string") return res.status(400).json({ error: "Column ID Required" });
+    const { tableColumnId } = req.body;
+    if (!tableColumnId || typeof tableColumnId !== "string") return res.status(400).json({ error: "Table Column ID Required" });
+
     try {
-        const column = await prisma.tableColumn.findFirst({ where: { id: columnId, schemaTableId: req.schema!.id } });
-        if (!column) return res.status(404).json({ error: "Column Not Found" });
+        const column = await prisma.tableColumn.findFirst({
+            where: { id: tableColumnId, schemaTable: { schemaId: req.schema!.id } },
+        });
+        if (!column) return res.status(404).json({ error: "Table Column Not Found" });
 
         const tableIndex = await prisma.tableIndex.create({
-            data: { tableColumnId: columnId, schemaTableId: column.schemaTableId },
+            data: { tableColumnId },
         });
-        return res.status(200).json(tableIndex);
+        return res.status(201).json(tableIndex);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal Server Error" });
@@ -20,10 +23,16 @@ const createTableIndex = async (req: Request, res: Response) => {
 
 const deleteTableIndex = async (req: Request, res: Response) => {
     const id = req.params.id;
-    if (!id || typeof id !== "string") return res.status(400).json({ error: "ID Required" });
+    if (!id || typeof id !== "string") return res.status(400).json({ error: "Table Index ID Required" });
+
     try {
-        const tableIndex = await prisma.tableIndex.delete({ where: { id } });
-        return res.status(200).json(tableIndex);
+        const existing = await prisma.tableIndex.findFirst({
+            where: { id, tableColumn: { schemaTable: { schemaId: req.schema!.id } } },
+        });
+        if (!existing) return res.status(404).json({ error: "Table Index Not Found" });
+
+        await prisma.tableIndex.delete({ where: { id } });
+        return res.status(204).send();
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal Server Error" });

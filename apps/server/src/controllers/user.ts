@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "src/lib/prisma";
+import { prisma } from "../lib/prisma";
 
 const lookupUserByEmail = async (req: Request, res: Response) => {
     const email = req.params.email;
