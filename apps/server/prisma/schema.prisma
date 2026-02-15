@@ -68,9 +68,8 @@ model SchemaTable {
   positionX Float?
   positionY Float?
 
-  tableColumns           TableColumn[]
-  tableIndexs            TableIndex[]
-  tableColumnConstraints TableColumnConstraint[]
+  tableColumns TableColumn[]
+  tableIndexs  TableIndex[]
 
   @@index([schemaId])
   @@map("schema-table")
@@ -91,6 +90,7 @@ model TableColumn {
 
   // Constraints (PK, UNIQUE, NOT NULL, DEFAULT, CHECK, FK)
   tableColumnConstraints TableColumnConstraint[]
+  tableIndexes           TableIndex[]
 
   @@index([schemaTableId])
   @@map("table-column")
@@ -115,25 +115,20 @@ model TableIndex {
   id            String      @id @default(uuid())
   schemaTable   SchemaTable @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
   schemaTableId String
-
-  name             String
-  indexedColumnIds String[] // Ordered Column Names
+  tableColumn   TableColumn @relation(fields: [tableColumnId], references: [id], onDelete: Cascade)
+  tableColumnId String
 
   @@index([schemaTableId])
+  @@index([tableColumnId])
   @@map("table-index")
 }
 
 model TableColumnConstraint {
-  id            String       @id @default(uuid())
-  schemaTable   SchemaTable  @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
-  schemaTableId String
-  tableColumn   TableColumn? @relation(fields: [tableColumnId], references: [id], onDelete: Cascade)
-  tableColumnId String?
+  id            String         @id @default(uuid())
+  type          ConstraintType
+  expression    String?
+  columnIds     String[] // ordered tableColumnIds – 1 for single-column, 2+ for composite
 
-  type       ConstraintType
-  expression String? // Raw SQL Condition (Check), Optional for PK, FK, NOT NULL
-
-  @@index([schemaTableId])
   @@map("table-column-constraint")
 }
 
