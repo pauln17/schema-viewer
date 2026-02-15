@@ -59,7 +59,7 @@ model SchemaCollaboration {
 
 model SchemaTable {
   id       String @id @default(uuid())
-  schema   Schema @relation(fields: [schemaId], references: [id])
+  schema   Schema @relation(fields: [schemaId], references: [id], onDelete: Cascade)
   schemaId String
 
   name String
@@ -83,7 +83,7 @@ model TableColumn {
 
   name     String
   dataType String // actual database type
-  order    Int    @default(0) // controls vertical order inside table
+  order    Int    @default(0) // Controls Vertical Order Inside Table
 
   // Relations
   outgoingReferences ColumnRelation[] @relation("SourceColumn")
@@ -98,9 +98,9 @@ model TableColumn {
 
 model ColumnRelation {
   id             String      @id @default(uuid())
-  sourceColumn   TableColumn @relation("SourceColumn", fields: [sourceColumnId], references: [id])
+  sourceColumn   TableColumn @relation("SourceColumn", fields: [sourceColumnId], references: [id], onDelete: Cascade)
   sourceColumnId String
-  targetColumn   TableColumn @relation("TargetColumn", fields: [targetColumnId], references: [id])
+  targetColumn   TableColumn @relation("TargetColumn", fields: [targetColumnId], references: [id], onDelete: Cascade)
   targetColumnId String
 
   onDelete String? // "CASCADE", "SET NULL", "RESTRICT", etc.
@@ -127,7 +127,7 @@ model TableColumnConstraint {
   id            String       @id @default(uuid())
   schemaTable   SchemaTable  @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
   schemaTableId String
-  tableColumn   TableColumn? @relation(fields: [tableColumnId], references: [id])
+  tableColumn   TableColumn? @relation(fields: [tableColumnId], references: [id], onDelete: Cascade)
   tableColumnId String?
 
   type       ConstraintType

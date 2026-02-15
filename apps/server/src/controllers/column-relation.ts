@@ -51,24 +51,8 @@ const deleteColumnRelation = async (req: Request, res: Response) => {
     const id = req.params.id;
     if (!id || typeof id !== "string") return res.status(400).json({ error: "Column Relation ID Required" });
     try {
-        const columnRelation = await prisma.columnRelation.findFirst({ where: { id } });
-        if (!columnRelation) return res.status(404).json({ error: "Column Relation Not Found" });
-        const sourceColumn = await prisma.tableColumn.findFirst({ where: { id: columnRelation.sourceColumnId } });
-        if (!sourceColumn) return res.status(404).json({ error: "Source Column Not Found" });
-        const targetColumn = await prisma.tableColumn.findFirst({ where: { id: columnRelation.targetColumnId } });
-        if (!targetColumn) return res.status(404).json({ error: "Target Column Not Found" });
-
-        await prisma.tableColumn.update({
-            where: { id: sourceColumn.id },
-            data: { outgoingReferences: { disconnect: { id: columnRelation.id } } },
-        });
-        await prisma.tableColumn.update({
-            where: { id: targetColumn.id },
-            data: { incomingReferences: { disconnect: { id: columnRelation.id } } },
-        });
-
-        await prisma.columnRelation.delete({ where: { id } });
-        return res.status(200).json({ message: "Column Relation Deleted" });
+        const columnRelation = await prisma.columnRelation.delete({ where: { id } });
+        return res.status(200).json(columnRelation);
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Internal Server Error" });

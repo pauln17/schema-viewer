@@ -54,8 +54,8 @@ const deleteSchemaTable = async (req: Request, res: Response) => {
   if (!id || Array.isArray(id)) return res.status(400).json({ error: "Schema Table ID Required" });
 
   try {
-    await prisma.schemaTable.delete({ where: { id, schemaId } });
-    return res.status(200).json({ message: "Schema Table Deleted" });
+    const schemaTable = await prisma.schemaTable.delete({ where: { id, schemaId } });
+    return res.status(200).json(schemaTable);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal Server Error" });

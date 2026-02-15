@@ -59,12 +59,12 @@ const updateSchemaCollaboration = async (req: Request, res: Response) => {
 
 const deleteSchemaCollaboration = async (req: Request, res: Response) => {
   const id = req.params.id;
+
   if (!id || Array.isArray(id)) return res.status(400).json({ error: "Schema Collaboration ID Required" });
   try {
-    await prisma.schemaCollaboration.delete({
-      where: { id },
-    });
-    return res.status(200).json({ message: "Schema Collaboration Deleted Successfully" });
+    const schemaCollaboration = await prisma.schemaCollaboration.delete({ where: { id } });
+
+    return res.status(200).json(schemaCollaboration);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal Server Error" });
