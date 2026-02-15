@@ -69,7 +69,6 @@ model SchemaTable {
   positionY Float?
 
   tableColumns TableColumn[]
-  tableIndexs  TableIndex[]
 
   @@index([schemaId])
   @@map("schema-table")
@@ -113,8 +112,6 @@ model ColumnRelation {
 
 model TableIndex {
   id            String      @id @default(uuid())
-  schemaTable   SchemaTable @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
-  schemaTableId String
   tableColumn   TableColumn @relation(fields: [tableColumnId], references: [id], onDelete: Cascade)
   tableColumnId String
 
@@ -127,7 +124,7 @@ model TableColumnConstraint {
   id            String         @id @default(uuid())
   type          ConstraintType
   expression    String?
-  columnIds     String[] // ordered tableColumnIds – 1 for single-column, 2+ for composite
+  columnIds     String[] // Ordered tableColumnIds – 1 for Single-Column, 2+ for Composite
 
   @@map("table-column-constraint")
 }
