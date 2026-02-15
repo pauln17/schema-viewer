@@ -15,13 +15,6 @@ const createTableColumnConstraint = async (req: Request, res: Response) => {
       data: { type: type as ConstraintType, expression, columnIds },
     });
 
-    for (const columnId of columnIds) {
-      await prisma.tableColumn.update({
-        where: { id: columnId },
-        data: { tableColumnConstraints: { connect: { id: tableColumnConstraint.id } } },
-      });
-    }
-
     return res.status(200).json(tableColumnConstraint);
   } catch (error) {
     console.error(error);

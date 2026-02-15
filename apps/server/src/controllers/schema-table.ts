@@ -12,11 +12,6 @@ const createSchemaTable = async (req: Request, res: Response) => {
       data: { name, schemaId },
     });
 
-    await prisma.schema.update({
-      where: { id: schemaId },
-      data: { schemaTables: { connect: { id: schemaTable.id } } },
-    });
-
     return res.status(201).json(schemaTable);
   } catch (error) {
     console.error(error);

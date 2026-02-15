@@ -18,14 +18,6 @@ const createColumnRelation = async (req: Request, res: Response) => {
             data: { sourceColumnId, targetColumnId, ...data },
         });
 
-        await prisma.tableColumn.update({
-            where: { id: sourceColumnId },
-            data: { outgoingReferences: { connect: { id: columnRelation.id } } },
-        });
-        await prisma.tableColumn.update({
-            where: { id: targetColumnId },
-            data: { incomingReferences: { connect: { id: columnRelation.id } } },
-        });
         return res.status(201).json(columnRelation);
     } catch (error) {
         console.error(error);

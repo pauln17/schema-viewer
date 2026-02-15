@@ -115,7 +115,6 @@ model TableIndex {
   tableColumn   TableColumn @relation(fields: [tableColumnId], references: [id], onDelete: Cascade)
   tableColumnId String
 
-  @@index([schemaTableId])
   @@index([tableColumnId])
   @@map("table-index")
 }
@@ -125,6 +124,8 @@ model TableColumnConstraint {
   type          ConstraintType
   expression    String?
   columnIds     String[] // Ordered tableColumnIds – 1 for Single-Column, 2+ for Composite
+  tableColumn   TableColumn?   @relation(fields: [tableColumnId], references: [id])
+  tableColumnId String?
 
   @@map("table-column-constraint")
 }

@@ -27,11 +27,6 @@ const createSchemaCollaboration = async (req: Request, res: Response) => {
       data: { schemaId: schema.id, collaboratorId: collaborator.id, role },
     });
 
-    await prisma.schema.update({
-      where: { id: schema.id },
-      data: { schemaCollaborations: { connect: { id: schemaCollaboration.id } } },
-    });
-
     return res.status(201).json(schemaCollaboration);
   } catch (error) {
     console.error(error);
