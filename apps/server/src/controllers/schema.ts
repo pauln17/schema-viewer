@@ -1,14 +1,14 @@
 import { Request, Response } from "express";
-import { prisma } from "../lib/prisma";
+import { handleError } from "../lib/handleError";
+import * as schemaService from "../services/schema";
 
 // Admin/internal use only. Returns all schemas in the system.
 const getAllSchemas = async (req: Request, res: Response) => {
   try {
-    const schemas = await prisma.schema.findMany()
+    const schemas = await schemaService.getAllSchemas();
     return res.status(200).json(schemas);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return handleError(error, res);
   }
 };
 
@@ -16,20 +16,11 @@ const getAllSchemas = async (req: Request, res: Response) => {
 const getSchemaById = async (req: Request, res: Response) => {
   const id = req.params.id;
   if (!id || Array.isArray(id)) return res.status(400).json({ error: "Schema ID Required" });
-
   try {
-    const schema = await prisma.schema.findUnique({
-      where: { id },
-      include: {
-        schemaTables: true,
-        schemaCollaborations: true,
-      },
-    });
-    if (!schema) return res.status(404).json({ error: "Schema Not Found" });
+    const schema = await schemaService.getSchemaById(id);
     return res.status(200).json(schema);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return handleError(error, res);
   }
 };
 
@@ -37,37 +28,21 @@ const getSchemaById = async (req: Request, res: Response) => {
 // Backend infers userId from req.user (set by authMiddleware) — never trust client for access filtering.
 const getAccessibleSchemas = async (req: Request, res: Response) => {
   try {
-    const schemas = await prisma.schema.findMany({
-      where: {
-        OR: [
-          { userId: req.user!.id },
-          { schemaCollaborations: { some: { collaboratorId: req.user!.id } } },
-        ]
-      },
-      include: {
-        schemaTables: true,
-        schemaCollaborations: true,
-      },
-    });
+    const schemas = await schemaService.getAccessibleSchemas(req.user!.id);
     return res.status(200).json(schemas);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return handleError(error, res);
   }
 };
 
 const createSchema = async (req: Request, res: Response) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: "Name Required" });
-
   try {
-    const schema = await prisma.schema.create({
-      data: { name, userId: req.user!.id },
-    });
+    const schema = await schemaService.createSchema(name, req.user!.id);
     return res.status(201).json(schema);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return handleError(error, res);
   }
 };
 
@@ -76,34 +51,22 @@ const updateSchema = async (req: Request, res: Response) => {
   if (!id || Array.isArray(id)) return res.status(400).json({ error: "Schema ID Required" });
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: "Name Required" });
-
   try {
-    const schema = await prisma.schema.update({
-      where: { id },
-      data: { name },
-    });
+    const schema = await schemaService.updateSchema(id, name);
     return res.status(200).json(schema);
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return handleError(error, res);
   }
 };
 
 const deleteSchema = async (req: Request, res: Response) => {
   const id = req.params.id;
   if (!id || Array.isArray(id)) return res.status(400).json({ error: "Schema ID Required" });
-
   try {
-    const existing = await prisma.schema.findUnique({ where: { id } });
-    if (!existing) return res.status(404).json({ error: "Schema Not Found" });
-
-    await prisma.schema.delete({
-      where: { id },
-    });
+    await schemaService.deleteSchema(id);
     return res.status(204).send();
-  } catch (error: unknown) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal Server Error" });
+  } catch (error) {
+    return handleError(error, res);
   }
 };
 

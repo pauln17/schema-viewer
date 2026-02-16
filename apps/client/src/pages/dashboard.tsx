@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { authClient } from "@/lib/auth-client";

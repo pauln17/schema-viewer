@@ -1,5 +1,6 @@
 import globals from "globals";
 import tseslint from "typescript-eslint";
+import eslintConfigPrettier from "eslint-config-prettier/flat";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
@@ -12,14 +13,10 @@ export default defineConfig([
       "**/generated/**",
     ],
   },
-  { 
-    files: ["**/*.{js,mjs,cjs,ts,tsx,mts,cts}"], 
-    languageOptions: { globals: {...globals.browser, ...globals.node} },
+  {
+    files: ["**/*.{js,mjs,cjs,ts,tsx,mts,cts}"],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
   tseslint.configs.recommended,
-  {
-    extends: [
-      "prettier",
-    ]
-  }
+  eslintConfigPrettier,
 ]);
