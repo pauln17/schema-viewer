@@ -83,31 +83,11 @@ model TableColumn {
   dataType String // actual database type
   order    Int    @default(0) // Controls Vertical Order Inside Table
 
-  // Relations
-  outgoingReferences ColumnRelation[] @relation("SourceColumn")
-  incomingReferences ColumnRelation[] @relation("TargetColumn")
-
-  // Constraints (PK, UNIQUE, NOT NULL, DEFAULT, CHECK, FK)
-  tableColumnConstraints TableColumnConstraint[]
+  // Constraints (PK, UNIQUE, NOT NULL, etc.) — which columns: see TableColumnConstraint.columnIds
   tableIndexes           TableIndex[]
 
   @@index([schemaTableId])
   @@map("table-column")
-}
-
-model ColumnRelation {
-  id             String      @id @default(uuid())
-  sourceColumn   TableColumn @relation("SourceColumn", fields: [sourceColumnId], references: [id], onDelete: Cascade)
-  sourceColumnId String
-  targetColumn   TableColumn @relation("TargetColumn", fields: [targetColumnId], references: [id], onDelete: Cascade)
-  targetColumnId String
-
-  onDelete String? // "CASCADE", "SET NULL", "RESTRICT", etc.
-  onUpdate String? // "CASCADE", "SET NULL", "RESTRICT", etc.
-
-  @@index([sourceColumnId])
-  @@index([targetColumnId])
-  @@map("column-relation")
 }
 
 model TableIndex {
@@ -120,13 +100,17 @@ model TableIndex {
 }
 
 model TableColumnConstraint {
-  id            String         @id @default(uuid())
-  type          ConstraintType
-  expression    String?
-  columnIds     String[] // Ordered tableColumnIds – 1 for Single-Column, 2+ for Composite
-  tableColumn   TableColumn?   @relation(fields: [tableColumnId], references: [id])
-  tableColumnId String?
+  id                   String         @id @default(uuid())
+  type                 ConstraintType
+  expression           String?
 
+  onDelete             String? // FOREIGN_KEY: CASCADE, SET NULL, RESTRICT, etc.
+  onUpdate             String? // FOREIGN_KEY: CASCADE, SET NULL, RESTRICT, etc.
+
+  columnIds            String[] // Source Column(s)
+  referencedColumnIds  String[] @default([]) // FOREIGN_KEY: Target Column(s)
+
+  @@index([type])
   @@map("table-column-constraint")
 }
 

@@ -3,9 +3,12 @@ import type { ConstraintType } from "../generated/prisma/client";
 
 const createTableColumnConstraint = async (
   schemaId: string,
-  body: { type: ConstraintType; expression?: string; columnIds: string[] }
+  body: { type: ConstraintType; expression?: string; columnIds: string[]; referencedColumnIds: string[]; onDelete?: string; onUpdate?: string }
 ) => {
-  const { type, expression, columnIds } = body;
+  const { type, expression, columnIds, referencedColumnIds, onDelete, onUpdate } = body;
+
+  if (type === "FOREIGN_KEY" && referencedColumnIds.length === 0) throw { statusCode: 400, error: "Referenced Column IDs Required for FOREIGN_KEY" };
+  if (type === "FOREIGN_KEY" && referencedColumnIds.length !== columnIds.length) throw { statusCode: 400, error: "Referenced Column IDs Length Must Match Column IDs" };
 
   // Reject Invalid Column IDs or Not in Authorized Schema
   const colsInSchema = await prisma.tableColumn.findMany({
@@ -17,11 +20,22 @@ const createTableColumnConstraint = async (
   const uniqueTableIds = new Set(colsInSchema.map((c) => c.schemaTableId));
   if (uniqueTableIds.size > 1) throw { statusCode: 400, error: "All Columns Must Belong to the Same Table" };
 
+  // FOREIGN_KEY: Validate Referenced Columns Exist in Schema (and Optionally Different Table from Source)
+  if (type === "FOREIGN_KEY") {
+    const refColsInSchema = await prisma.tableColumn.findMany({
+      where: { id: { in: referencedColumnIds }, schemaTable: { schemaId } },
+    });
+    if (refColsInSchema.length !== referencedColumnIds.length) throw { statusCode: 400, error: "Invalid Referenced Column IDs" };
+  }
+
   return prisma.tableColumnConstraint.create({
     data: {
       type,
-      columnIds,
       ...(expression != null && expression !== "" && { expression }),
+      columnIds,
+      referencedColumnIds: type === "FOREIGN_KEY" ? referencedColumnIds : [],
+      ...(type === "FOREIGN_KEY" && onDelete != null && { onDelete }),
+      ...(type === "FOREIGN_KEY" && onUpdate != null && { onUpdate }),
     },
   });
 };

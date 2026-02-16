@@ -42,6 +42,9 @@ const createSchema = async (name: string, userId: string) => {
 };
 
 const updateSchema = async (id: string, name: string) => {
+  const existing = await prisma.schema.findUnique({ where: { id } })
+  if (!existing) throw { statusCode: 404, error: "Schema Not Found" }
+
   return prisma.schema.update({
     where: { id },
     data: { name },

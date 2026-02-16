@@ -16,7 +16,6 @@ import schemaTableRoutes from "./routes/schema-table";
 import tableColumnRoutes from "./routes/table-column";
 import tableIndexRoutes from "./routes/table-index";
 import tableColumnConstraintRoutes from "./routes/table-column-constraint";
-import columnRelationRoutes from "./routes/column-relation";
 
 const app = express();
 
@@ -50,7 +49,6 @@ app.use("/schema-tables", schemaTableRoutes);
 app.use("/table-columns", tableColumnRoutes);
 app.use("/table-indexes", tableIndexRoutes);
 app.use("/table-column-constraints", tableColumnConstraintRoutes);
-app.use("/column-relations", columnRelationRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({ Server: "200" });

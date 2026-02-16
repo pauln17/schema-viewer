@@ -4,11 +4,16 @@ import { handleError } from "../lib/handleError";
 import * as tableColumnConstraintService from "../services/table-column-constraint";
 
 const createTableColumnConstraint = async (req: Request, res: Response) => {
-  const { type, expression, columnIds } = req.body;
+  const { type, expression, columnIds, referencedColumnIds, onDelete, onUpdate } = req.body;
   if (!columnIds || !Array.isArray(columnIds) || columnIds.length === 0)
     return res.status(400).json({ error: "Column IDs Required" });
   if (!type || typeof type !== "string") return res.status(400).json({ error: "Type Required" });
-
+  if (type === "FOREIGN_KEY") {
+    if (!referencedColumnIds || !Array.isArray(referencedColumnIds) || referencedColumnIds.length === 0)
+      return res.status(400).json({ error: "Referenced Column IDs Required for FOREIGN_KEY" });
+    if (referencedColumnIds.length !== columnIds.length)
+      return res.status(400).json({ error: "Referenced Column IDs length must match Column IDs for FOREIGN_KEY" });
+  }
   if (
     (type === "CHECK" || type === "DEFAULT") &&
     (!expression || typeof expression !== "string")
@@ -17,7 +22,14 @@ const createTableColumnConstraint = async (req: Request, res: Response) => {
   try {
     const tableColumnConstraint = await tableColumnConstraintService.createTableColumnConstraint(
       req.schema!.id,
-      { type: type as ConstraintType, expression, columnIds }
+      {
+        type: type as ConstraintType,
+        expression,
+        columnIds,
+        referencedColumnIds: Array.isArray(referencedColumnIds) ? referencedColumnIds : [],
+        ...(onDelete != null && { onDelete }),
+        ...(onUpdate != null && { onUpdate }),
+      }
     );
     return res.status(201).json(tableColumnConstraint);
   } catch (error) {

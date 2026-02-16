@@ -6,7 +6,7 @@ const createSchemaTable = async (req: Request, res: Response) => {
   const schemaId = req.schema!.id;
   if (!schemaId || Array.isArray(schemaId)) return res.status(400).json({ error: "Schema ID Required" });
   const { name } = req.body;
-  if (!name) return res.status(400).json({ error: "Name Required" });
+  if (!name || typeof name !== "string") return res.status(400).json({ error: "Name Required" });
   try {
     const schemaTable = await schemaTableService.createSchemaTable(schemaId, name);
     return res.status(201).json(schemaTable);
@@ -21,6 +21,9 @@ const updateSchemaTable = async (req: Request, res: Response) => {
   const id = req.params.id;
   if (!id || Array.isArray(id)) return res.status(400).json({ error: "Schema Table ID Required" });
   const { name, positionX, positionY } = req.body;
+  if (name !== undefined && typeof name !== "string") return res.status(400).json({ error: "Name must be a string" });
+  if (positionX !== undefined && typeof positionX !== "number") return res.status(400).json({ error: "positionX must be a number" });
+  if (positionY !== undefined && typeof positionY !== "number") return res.status(400).json({ error: "positionY must be a number" });
   const data = Object.fromEntries(
     Object.entries({ name, positionX, positionY }).filter(([, value]) => value !== undefined)
   );
