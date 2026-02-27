@@ -169,6 +169,16 @@ enum CollaboratorRole {
   EDITOR
 }
 
+enum DataType {
+  INT
+  BIGINT
+  VARCHAR
+  BOOLEAN
+  DATE
+  TIMESTAMP
+  UUID
+}
+
 enum ConstraintType {
   PRIMARY_KEY
   FOREIGN_KEY

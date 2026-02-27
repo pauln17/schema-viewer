@@ -1,13 +1,17 @@
 import { prisma } from "../lib/prisma";
 import { Request, Response, NextFunction } from "express";
+import { z } from "zod";
 
 const ROLE_RANK = { VIEWER: 1, EDITOR: 2, OWNER: 3 } as const;
 type MinRole = keyof typeof ROLE_RANK;
 
 export const authorizeSchema = (minRole: MinRole) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const schemaId = req.params.schemaId || req.body.schemaId || req.params.id || req.query.schemaId;
-    if (!schemaId || typeof schemaId !== "string") return res.status(400).json({ error: "Schema ID Required" });
+    const schemaIdRaw = req.params.schemaId || req.body.schemaId || req.params.id || req.query.schemaId;
+    const schemaIdResult = z.uuid().safeParse(schemaIdRaw);
+
+    if (!schemaIdResult.success) return res.status(400).json({ error: "Schema ID Required" });
+    const schemaId = schemaIdResult.data;
 
     try {
       const schema = await prisma.schema.findUnique({ where: { id: schemaId } });

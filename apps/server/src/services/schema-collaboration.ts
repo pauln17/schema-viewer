@@ -5,7 +5,7 @@ const createSchemaCollaboration = async (
   schemaId: string,
   userId: string,
   email: string,
-  role?: CollaboratorRole
+  role: CollaboratorRole
 ) => {
   const collaborator = await prisma.user.findUnique({ where: { email } });
   if (!collaborator) throw { statusCode: 404, error: "Collaborator Not Found" };
@@ -24,7 +24,7 @@ const createSchemaCollaboration = async (
 const updateSchemaCollaboration = async (
   schemaId: string,
   id: string,
-  data: { role?: CollaboratorRole }
+  data: { role: CollaboratorRole }
 ) => {
   const existing = await prisma.schemaCollaboration.findFirst({
     where: { id, schemaId },

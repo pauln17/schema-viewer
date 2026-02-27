@@ -1,35 +1,52 @@
 import { Request, Response } from "express";
-import type { ConstraintType } from "../generated/prisma/client";
+import { ConstraintType } from "../generated/prisma/client";
 import { handleError } from "../lib/handleError";
+import { z } from "zod";
 import * as tableColumnConstraintService from "../services/table-column-constraint";
 
 const createTableColumnConstraint = async (req: Request, res: Response) => {
-  const { type, expression, columnIds, referencedColumnIds, onDelete, onUpdate } = req.body;
-  if (!columnIds || !Array.isArray(columnIds) || columnIds.length === 0)
-    return res.status(400).json({ error: "Column IDs Required" });
-  if (!type || typeof type !== "string") return res.status(400).json({ error: "Type Required" });
-  if (type === "FOREIGN_KEY") {
-    if (!referencedColumnIds || !Array.isArray(referencedColumnIds) || referencedColumnIds.length === 0)
-      return res.status(400).json({ error: "Referenced Column IDs Required for FOREIGN_KEY" });
-    if (referencedColumnIds.length !== columnIds.length)
-      return res.status(400).json({ error: "Referenced Column IDs length must match Column IDs for FOREIGN_KEY" });
-  }
-  if (
-    (type === "CHECK" || type === "DEFAULT") &&
-    (!expression || typeof expression !== "string")
-  )
-    return res.status(400).json({ error: "Expression Required for CHECK/DEFAULT" });
+  const constraintObject = z.object({
+    type: z.enum(Object.values(ConstraintType)),
+    expression: z.string().optional(),
+    columnIds: z.array(z.uuid()),
+    referencedColumnIds: z.array(z.uuid()).optional(),
+    onDelete: z.string().optional(),
+    onUpdate: z.string().optional(),
+  }).superRefine(
+    (data, ctx) => {
+      if (data.type === "FOREIGN_KEY") {
+        if (!data.referencedColumnIds || data.referencedColumnIds.length === 0)
+          ctx.addIssue({
+            code: "custom", message: "Referenced Column IDs Required for FOREIGN_KEY"
+          });
+        if (data.referencedColumnIds?.length !== data.columnIds.length)
+          ctx.addIssue({
+            code: "custom", message: "Referenced Column IDs Length Must Match Column IDs for FOREIGN_KEY"
+          });
+      }
+      if ((data.type === "CHECK" || data.type === "DEFAULT") && (!data.expression))
+        ctx.addIssue({
+          code: "custom", message: "Expression Required for CHECK/DEFAULT"
+        });
+    });
+
+  const result = constraintObject.safeParse(req.body);
+  if (!result.success) return res.status(400).json({ error: result.error.message });
+  const { type, expression, columnIds, referencedColumnIds, onDelete, onUpdate } = result.data;
+
+  const data = {
+    type,
+    columnIds,
+    referencedColumnIds: referencedColumnIds ?? [],
+    ...(expression !== undefined && expression !== "" && { expression }),
+    ...(onDelete !== undefined && { onDelete }),
+    ...(onUpdate !== undefined && { onUpdate }),
+  };
+
   try {
     const tableColumnConstraint = await tableColumnConstraintService.createTableColumnConstraint(
       req.schema!.id,
-      {
-        type: type as ConstraintType,
-        expression,
-        columnIds,
-        referencedColumnIds: Array.isArray(referencedColumnIds) ? referencedColumnIds : [],
-        ...(onDelete != null && { onDelete }),
-        ...(onUpdate != null && { onUpdate }),
-      }
+      data
     );
     return res.status(201).json(tableColumnConstraint);
   } catch (error) {
@@ -38,18 +55,25 @@ const createTableColumnConstraint = async (req: Request, res: Response) => {
 };
 
 const updateTableColumnConstraint = async (req: Request, res: Response) => {
-  const id = req.params.id;
-  if (!id || typeof id !== "string") return res.status(400).json({ error: "Constraint ID Required" });
-  const { type, expression } = req.body;
-  const data = Object.fromEntries(
-    Object.entries({ type, expression }).filter(([, value]) => value !== undefined)
-  );
+  const idRaw = req.params.id;
+  const idResult = z.uuid().safeParse(idRaw);
+  if (!idResult.success) return res.status(400).json({ error: "Constraint ID Required" });
+  const id = idResult.data;
+
+  const constraintObject = z.object({
+    type: z.enum(Object.values(ConstraintType)).optional(),
+    expression: z.string().optional(),
+  }).transform((data) => Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined)));
+  const result = constraintObject.safeParse(req.body);
+
+  if (!result.success) return res.status(400).json({ error: result.error.message });
+
 
   try {
     const tableColumnConstraint = await tableColumnConstraintService.updateTableColumnConstraint(
       req.schema!.id,
       id,
-      data
+      result.data
     );
     return res.status(200).json(tableColumnConstraint);
   } catch (error) {
@@ -58,8 +82,11 @@ const updateTableColumnConstraint = async (req: Request, res: Response) => {
 };
 
 const deleteTableColumnConstraint = async (req: Request, res: Response) => {
-  const id = req.params.id;
-  if (!id || typeof id !== "string") return res.status(400).json({ error: "Constraint ID Required" });
+  const idRaw = req.params.id;
+  const idResult = z.uuid().safeParse(idRaw);
+  if (!idResult.success) return res.status(400).json({ error: "Constraint ID Required" });
+  const id = idResult.data;
+
   try {
     await tableColumnConstraintService.deleteTableColumnConstraint(req.schema!.id, id);
     return res.status(204).send();

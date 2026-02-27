@@ -1,16 +1,24 @@
 import { Request, Response } from "express";
 import { handleError } from "../lib/handleError";
+import { z } from "zod";
 import * as tableColumnService from "../services/table-column";
 
 const createColumn = async (req: Request, res: Response) => {
-  const { schemaTableId, name, dataType, order } = req.body;
-  if (!schemaTableId || typeof schemaTableId !== "string")
-    return res.status(400).json({ error: "Schema Table ID Required" });
+  const columnObject = z.object({
+    schemaTableId: z.uuid(),
+    name: z.string().min(1).max(15),
+    dataType: z.string().min(1).max(15),
+    order: z.number().optional(),
+  });
+  const result = columnObject.safeParse(req.body);
+  if (!result.success) return res.status(400).json({ error: result.error.message });
+  const { schemaTableId, name, dataType, order } = result.data;
+
   try {
     const column = await tableColumnService.createColumn(req.schema!.id, schemaTableId, {
       name,
       dataType,
-      order,
+      order: order ?? 0,
     });
     return res.status(201).json(column);
   } catch (error) {
@@ -34,8 +42,11 @@ const updateColumn = async (req: Request, res: Response) => {
 };
 
 const deleteColumn = async (req: Request, res: Response) => {
-  const id = req.params.id;
-  if (!id || typeof id !== "string") return res.status(400).json({ error: "Table Column ID Required" });
+  const idRaw = req.params.id;
+  const idResult = z.uuid().safeParse(idRaw);
+  if (!idResult.success) return res.status(400).json({ error: "Table Column ID Required" });
+  const id = idResult.data;
+
   try {
     await tableColumnService.deleteColumn(req.schema!.id, id);
     return res.status(204).send();

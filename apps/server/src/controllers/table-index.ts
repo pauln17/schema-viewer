@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
 import { handleError } from "../lib/handleError";
+import { z } from "zod";
 import * as tableIndexService from "../services/table-index";
 
 const createTableIndex = async (req: Request, res: Response) => {
-  const { tableColumnId } = req.body;
-  if (!tableColumnId || typeof tableColumnId !== "string")
-    return res.status(400).json({ error: "Table Column ID Required" });
+  const tableColumnIdResult = z.uuid().safeParse(req.body.tableColumnId);
+  if (!tableColumnIdResult.success) return res.status(400).json({ error: "Table Column ID Required" });
+  const tableColumnId = tableColumnIdResult.data;
+
   try {
     const tableIndex = await tableIndexService.createTableIndex(req.schema!.id, tableColumnId);
     return res.status(201).json(tableIndex);
@@ -15,8 +17,11 @@ const createTableIndex = async (req: Request, res: Response) => {
 };
 
 const deleteTableIndex = async (req: Request, res: Response) => {
-  const id = req.params.id;
-  if (!id || typeof id !== "string") return res.status(400).json({ error: "Table Index ID Required" });
+  const idRaw = req.params.id;
+  const idResult = z.uuid().safeParse(idRaw);
+  if (!idResult.success) return res.status(400).json({ error: "Table Index ID Required" });
+  const id = idResult.data;
+
   try {
     await tableIndexService.deleteTableIndex(req.schema!.id, id);
     return res.status(204).send();

@@ -3,12 +3,9 @@ import type { ConstraintType } from "../generated/prisma/client";
 
 const createTableColumnConstraint = async (
   schemaId: string,
-  body: { type: ConstraintType; expression?: string; columnIds: string[]; referencedColumnIds: string[]; onDelete?: string; onUpdate?: string }
+  data: { type: ConstraintType; expression?: string; columnIds: string[]; referencedColumnIds: string[]; onDelete?: string; onUpdate?: string }
 ) => {
-  const { type, expression, columnIds, referencedColumnIds, onDelete, onUpdate } = body;
-
-  if (type === "FOREIGN_KEY" && referencedColumnIds.length === 0) throw { statusCode: 400, error: "Referenced Column IDs Required for FOREIGN_KEY" };
-  if (type === "FOREIGN_KEY" && referencedColumnIds.length !== columnIds.length) throw { statusCode: 400, error: "Referenced Column IDs Length Must Match Column IDs" };
+  const { type, expression, columnIds, referencedColumnIds, onDelete, onUpdate } = data;
 
   // Reject Invalid Column IDs or Not in Authorized Schema
   const colsInSchema = await prisma.tableColumn.findMany({
