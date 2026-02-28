@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -13,177 +10,24 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id                   String                @id @default(uuid())
-  email                String                @unique
-  name                 String?
-  role                 Role                  @default(USER)
-  schemas              Schema[]
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  emailVerified        Boolean               @default(false)
-  image                String?
-  sessions             Session[]
-  accounts             Account[]
-  schemaCollaborations SchemaCollaboration[]
-
-  @@map("user")
-}
-
 model Schema {
-  id                   String                @id @default(uuid())
-  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId               String
-  name                 String
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  schemaTables         SchemaTable[]
-  schemaCollaborations SchemaCollaboration[]
+  id         String        @id @default(uuid())
+  name       String
+  definition Json?         // Full Diagram: Tables, Columns, Indexes, Constraints (JSONB in PostgreSQL)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  tokens     SchemaToken[]
 
-  @@index([userId])
   @@map("schema")
 }
 
-model SchemaCollaboration {
-  id             String           @id @default(uuid())
-  schema         Schema           @relation(fields: [schemaId], references: [id], onDelete: Cascade)
-  schemaId       String
-  user           User             @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
-  collaboratorId String
-  role           CollaboratorRole @default(VIEWER)
+model SchemaToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  schemaId  String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  schema    Schema    @relation(fields: [schemaId], references: [id], onDelete: Cascade)
 
-  @@unique([schemaId, collaboratorId])
-  @@index([collaboratorId])
-  @@map("schema-collaboration")
-}
-
-model SchemaTable {
-  id       String @id @default(uuid())
-  schema   Schema @relation(fields: [schemaId], references: [id], onDelete: Cascade)
-  schemaId String
-
-  name String
-
-  // Stored Table Position (Initially Auto Layout)
-  positionX Float?
-  positionY Float?
-
-  tableColumns TableColumn[]
-
-  @@index([schemaId])
-  @@map("schema-table")
-}
-
-model TableColumn {
-  id            String      @id @default(uuid())
-  schemaTable   SchemaTable @relation(fields: [schemaTableId], references: [id], onDelete: Cascade)
-  schemaTableId String
-
-  name     String
-  dataType String // actual database type
-  order    Int    @default(0) // Controls Vertical Order Inside Table
-
-  // Constraints (PK, UNIQUE, NOT NULL, etc.) — which columns: see TableColumnConstraint.columnIds
-  tableIndexes           TableIndex[]
-
-  @@index([schemaTableId])
-  @@map("table-column")
-}
-
-model TableIndex {
-  id            String      @id @default(uuid())
-  tableColumn   TableColumn @relation(fields: [tableColumnId], references: [id], onDelete: Cascade)
-  tableColumnId String
-
-  @@index([tableColumnId])
-  @@map("table-index")
-}
-
-model TableColumnConstraint {
-  id                   String         @id @default(uuid())
-  type                 ConstraintType
-  expression           String?
-
-  onDelete             String? // FOREIGN_KEY: CASCADE, SET NULL, RESTRICT, etc.
-  onUpdate             String? // FOREIGN_KEY: CASCADE, SET NULL, RESTRICT, etc.
-
-  columnIds            String[] // Source Column(s)
-  referencedColumnIds  String[] @default([]) // FOREIGN_KEY: Target Column(s)
-
-  @@index([type])
-  @@map("table-column-constraint")
-}
-
-model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([token])
-  @@map("session")
-}
-
-model Account {
-  id                    String    @id
-  accountId             String
-  providerId            String
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  @@map("account")
-}
-
-model Verification {
-  id         String   @id
-  identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
-
-  @@map("verification")
-}
-
-enum Role {
-  USER
-  ADMIN
-}
-
-enum CollaboratorRole {
-  VIEWER
-  EDITOR
-}
-
-enum DataType {
-  INT
-  BIGINT
-  VARCHAR
-  BOOLEAN
-  DATE
-  TIMESTAMP
-  UUID
-}
-
-enum ConstraintType {
-  PRIMARY_KEY
-  FOREIGN_KEY
-  DEFAULT
-  UNIQUE
-  CHECK
-  NOT_NULL
+  @@map("schema_token")
 }
