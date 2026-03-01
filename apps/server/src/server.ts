@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import schemaRouter from "./schema";
+import { rateLimiter } from "./middleware/rateLimiter";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(rateLimiter);
 
 app.use("/schemas", schemaRouter);
 
