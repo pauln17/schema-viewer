@@ -11,8 +11,6 @@
   "dependencies": {
     "@tanstack/react-query": "^5.90.19",
     "@xyflow/react": "^12.8.4",
-    "better-auth": "^1.4.17",
-    "dotenv": "^17.2.2",
     "next": "^15.5.9",
     "react": "19.1.0",
     "react-dom": "19.1.0"
