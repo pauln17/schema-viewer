@@ -24,12 +24,14 @@ export default function Root() {
             icon="/folder.png"
             title="Create Schema"
             description="Start with Empty Canvas"
+            size={100}
             href="/editor"
           />
           <ActionCard
             icon="/upload.png"
             title="Parse SQL File"
             description="Upload or Paste SQL"
+            size={85}
             href="/editor?parse=true"
           />
         </div>
