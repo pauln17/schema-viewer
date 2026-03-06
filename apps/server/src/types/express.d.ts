@@ -3,6 +3,7 @@ declare global {
     namespace Express {
         interface Request {
             schema?: { id: string };
+            token?: string;
         }
     }
 }

@@ -1,12 +1,15 @@
 import "dotenv/config";
 import express, { Request, Response } from "express";
 import cors from "cors";
-import schemaRouter from "./schema";
 import { rateLimiter } from "./middleware/rateLimiter";
+import schemaRouter from "./schema";
 
 const app = express();
 
-const allowedOrigins = ["http://localhost:3000"];
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
 
 app.use(
   cors({

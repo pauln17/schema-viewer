@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, type JSX } from 'react';
+import { useRouter } from 'next/router';
 import {
     ReactFlow,
     Background,
@@ -13,80 +14,17 @@ import {
     type Connection,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { useQuery } from '@tanstack/react-query';
 import EditorSidebar from '@/components/editor-sidebar';
 import EditorNavbar from '@/components/editor-navbar';
 import TableNode from '@/components/table-node';
 import type { Table, Enum } from '@/types/schema';
 
-const defaultTables: Table[] = [
-    {
-        name: 'users',
-        columns: [
-            { name: 'id', type: 'UUID', primaryKey: true },
-            { name: 'email', type: 'VARCHAR', unique: true, notNull: true },
-            { name: 'role', type: 'USER_ROLE', default: 'member' },
-            { name: 'active', type: 'BOOLEAN', default: 'true', notNull: true },
-            { name: 'birth_date', type: 'DATE' },
-            { name: 'created_at', type: 'TIMESTAMP', default: 'now()', notNull: true },
-        ],
-    },
-    {
-        name: 'posts',
-        columns: [
-            { name: 'id', type: 'UUID', primaryKey: true },
-            { name: 'user_id', type: 'UUID', notNull: true, references: { table: 'users', column: 'id' } },
-            { name: 'title', type: 'VARCHAR', notNull: true },
-            { name: 'body', type: 'VARCHAR' },
-            { name: 'status', type: 'POST_STATUS', default: 'draft' },
-            { name: 'view_count', type: 'BIGINT', default: '0', notNull: true },
-            { name: 'published_at', type: 'TIMESTAMP' },
-            { name: 'created_at', type: 'TIMESTAMP', default: 'now()', notNull: true },
-        ],
-    },
-    {
-        name: 'comments',
-        columns: [
-            { name: 'id', type: 'UUID', primaryKey: true },
-            { name: 'post_id', type: 'UUID', notNull: true, references: { table: 'posts', column: 'id' } },
-            { name: 'user_id', type: 'UUID', notNull: true, references: { table: 'users', column: 'id' } },
-            { name: 'content', type: 'VARCHAR', notNull: true },
-            { name: 'created_at', type: 'TIMESTAMP', default: 'now()', notNull: true },
-        ],
-    },
-    {
-        name: 'tags',
-        columns: [
-            { name: 'id', type: 'UUID', primaryKey: true },
-            { name: 'name', type: 'VARCHAR', unique: true, notNull: true },
-        ],
-    },
-    {
-        name: 'post_tags',
-        columns: [
-            { name: 'post_id', type: 'UUID', primaryKey: true, references: { table: 'posts', column: 'id' } },
-            { name: 'tag_id', type: 'UUID', primaryKey: true, references: { table: 'tags', column: 'id' } },
-        ],
-    },
-];
-
-const defaultEnums: Enum[] = [
-    { name: 'user_role', values: ['admin', 'member', 'guest'] },
-    { name: 'post_status', values: ['draft', 'published', 'archived'] },
-];
-
-const nodePositions: Record<string, { x: number; y: number }> = {
-    users: { x: 0, y: 0 },
-    posts: { x: 400, y: 0 },
-    comments: { x: 800, y: 0 },
-    tags: { x: 400, y: 420 },
-    post_tags: { x: 800, y: 420 },
-};
-
 function buildNodes(tables: Table[]): Node[] {
     return tables.map(t => ({
         id: t.name,
         type: 'table',
-        position: nodePositions[t.name] ?? { x: 0, y: 0 },
+        position: { x: 0, y: 0 },
         data: { label: t.name, columns: t.columns },
     }));
 }
@@ -112,12 +50,32 @@ function buildEdges(tables: Table[]): Edge[] {
 }
 
 export default function Editor() {
-    const [tables, setTables] = useState<Table[]>(defaultTables);
-    const [activeTab, setActiveTab] = useState('editor');
-    const [enums] = useState<Enum[]>(defaultEnums);
+    const router = useRouter();
+    const token = router.query.token as string | undefined;
 
-    const [flowNodes, setFlowNodes] = useState<Node[]>(() => buildNodes(defaultTables));
-    const [flowEdges, setFlowEdges] = useState<Edge[]>(() => buildEdges(defaultTables));
+    const { data: schemas } = useQuery({
+        queryKey: ['schemas', token],
+        queryFn: async () => {
+            const res = await fetch('http://127.0.0.1:5001/schemas', {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (!res.ok) {
+                throw new Error('Invalid Schema');
+            }
+
+            return res.json();
+        },
+        enabled: !!token && router.isReady,
+    });
+
+    const [tables, setTables] = useState<Table[]>(schemas?.definition?.tables || []);
+    const [enums] = useState<Enum[]>(schemas?.definition?.enums || []);
+    const [activeTab, setActiveTab] = useState('editor');
+    const [flowNodes, setFlowNodes] = useState<Node[]>(() => buildNodes(tables));
+    const [flowEdges, setFlowEdges] = useState<Edge[]>(() => buildEdges(tables));
 
     // Handles Table Changes -- Updates List of All Tables & Derives it For React Flow Nodes & Edges
     const handleTablesChange = useCallback((updated: Table[]) => {

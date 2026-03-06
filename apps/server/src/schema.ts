@@ -7,25 +7,11 @@ import { requireToken } from "./middleware/requireToken";
 const router = Router();
 
 router.get("/", requireToken(), async (req: Request, res: Response) => {
-  try {
-    const schema = await prisma.schema.findUnique({
-      where: { id: req.schema!.id },
-      select: { id: true, name: true, createdAt: true, updatedAt: true },
-    });
-    if (!schema) return res.status(404).json({ error: "Schema Not Found" });
-    return res.status(200).json([schema]);
-  } catch (error) {
-    return res.status(500).json({ error: error instanceof Error ? error.message : "Internal Server Error" });
-  }
-});
-
-router.get("/:id", requireToken(), async (req: Request, res: Response) => {
-  const idResult = z.uuid().safeParse(req.params.id);
-  if (!idResult.success) return res.status(400).json({ error: "Schema ID required" });
 
   try {
     const schema = await prisma.schema.findUnique({
-      where: { id: idResult.data },
+      where: { id: req.schema!.id, tokens: { some: { tokenHash: req.token! } } },
+      select: { id: true, name: true, definition: true, createdAt: true, updatedAt: true },
     });
     if (!schema) return res.status(404).json({ error: "Schema Not Found" });
     return res.status(200).json(schema);

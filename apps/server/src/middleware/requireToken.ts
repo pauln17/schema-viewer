@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { verifyToken } from "../lib/token";
+import { verifyToken, hashToken } from "../lib/token";
 
 const getBearerToken = (req: Request): string | null => {
   const auth = req.headers.authorization;
@@ -28,6 +28,7 @@ export const requireToken = (): ((req: Request, res: Response, next: NextFunctio
       return;
     }
     req.schema = { id: verificationResult.schemaId };
+    req.token = hashToken(token);
     next();
   };
 }
