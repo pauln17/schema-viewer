@@ -58,10 +58,37 @@ router.put("/", requireToken(), async (req: Request, res: Response) => {
   const schemaId = req.schema!.id;
   const hashedToken = req.token!;
 
+  const definitionObject = z.object({
+    enums: z.array(z.object({
+      name: z.string(),
+      values: z.array(z.string()),
+    })).optional(),
+    tables: z.array(z.object({
+      name: z.string(),
+      position: z.object({
+        x: z.number(),
+        y: z.number(),
+      }),
+      columns: z.array(z.object({
+        name: z.string(),
+        type: z.string(),
+        primaryKey: z.boolean().optional(),
+        unique: z.boolean().optional(),
+        notNull: z.boolean().optional(),
+        default: z.string().optional(),
+      })),
+    })).optional(),
+    indexes: z.array(z.object({
+      table: z.string(),
+      columns: z.array(z.string()),
+      name: z.string(),
+    })).optional(),
+  });
+
   const schemaObject = z
     .object({
       name: z.string().min(1).max(255).optional(),
-      definition: z.record(z.string(), z.unknown()).optional(),
+      definition: definitionObject.optional(),
     })
     .partial()
     .refine((d) => !(d.name === undefined && d.definition === undefined), {
