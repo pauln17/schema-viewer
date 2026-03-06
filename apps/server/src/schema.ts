@@ -64,7 +64,7 @@ router.put("/", requireToken(), async (req: Request, res: Response) => {
       definition: z.record(z.string(), z.unknown()).optional(),
     })
     .partial()
-    .refine((d) => d.name !== undefined && d.definition !== undefined, {
+    .refine((d) => !(d.name === undefined && d.definition === undefined), {
       message: "Update Requires Atleast One Field",
     })
     .transform((data) =>

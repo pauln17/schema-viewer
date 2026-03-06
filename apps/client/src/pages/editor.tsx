@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, type JSX } from 'react';
+import { useState, useCallback, useMemo, useEffect, type JSX } from 'react';
 import { useRouter } from 'next/router';
 import {
     ReactFlow,
@@ -67,7 +67,7 @@ export default function Editor() {
                     router.replace(`/editor/limit`);
                     return null;
                 }
-                router.replace('/editor/expired');
+                router.replace('/editor/unauthorized');
                 return null;
             }
             return res.json();
@@ -76,10 +76,19 @@ export default function Editor() {
     });
 
     const [tables, setTables] = useState<Table[]>(schemas?.definition?.tables || []);
-    const [enums] = useState<Enum[]>(schemas?.definition?.enums || []);
+    const [enums, setEnums] = useState<Enum[]>(schemas?.definition?.enums || []);
     const [activeTab, setActiveTab] = useState('editor');
     const [flowNodes, setFlowNodes] = useState<Node[]>(() => buildNodes(tables));
     const [flowEdges, setFlowEdges] = useState<Edge[]>(() => buildEdges(tables));
+
+    useEffect(() => {
+        if (schemas) {
+            setTables(schemas.definition.tables);
+            setFlowNodes(buildNodes(schemas.definition.tables));
+            setFlowEdges(buildEdges(schemas.definition.tables));
+            setEnums(schemas.definition.enums);
+        }
+    }, [schemas]);
 
     // Handles Table Changes -- Updates List of All Tables & Derives it For React Flow Nodes & Edges
     const handleTablesChange = useCallback((updated: Table[]) => {
