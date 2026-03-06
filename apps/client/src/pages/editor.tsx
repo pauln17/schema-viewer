@@ -63,9 +63,13 @@ export default function Editor() {
                 },
             });
             if (!res.ok) {
-                throw new Error('Invalid Schema');
+                if (res.status === 429) {
+                    router.replace(`/editor/limit`);
+                    return null;
+                }
+                router.replace('/editor/expired');
+                return null;
             }
-
             return res.json();
         },
         enabled: !!token && router.isReady,

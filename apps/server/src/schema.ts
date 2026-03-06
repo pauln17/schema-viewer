@@ -7,10 +7,12 @@ import { requireToken } from "./middleware/requireToken";
 const router = Router();
 
 router.get("/", requireToken(), async (req: Request, res: Response) => {
+  const schemaId = req.schema!.id;
+  const hashedToken = req.token!;
 
   try {
     const schema = await prisma.schema.findUnique({
-      where: { id: req.schema!.id, tokens: { some: { tokenHash: req.token! } } },
+      where: { id: schemaId, token: { tokenHash: hashedToken } },
       select: { id: true, name: true, definition: true, createdAt: true, updatedAt: true },
     });
     if (!schema) return res.status(404).json({ error: "Schema Not Found" });
@@ -25,6 +27,7 @@ router.post("/", async (req: Request, res: Response) => {
     name: z.string().min(1).max(255),
     definition: z.record(z.string(), z.unknown()).optional(),
   });
+
   const result = schemaObject.safeParse(req.body);
   if (!result.success) return res.status(400).json({ error: result.error.message });
 
@@ -41,7 +44,9 @@ router.post("/", async (req: Request, res: Response) => {
       data: {
         schemaId: schema.id,
         tokenHash: hashToken(rawToken),
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
       },
+
     });
     return res.status(201).json({ schema, token: rawToken });
   } catch (error) {
@@ -49,32 +54,35 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/:id", requireToken(), async (req: Request, res: Response) => {
-  const idResult = z.uuid().safeParse(req.params.id);
-  if (!idResult.success) return res.status(400).json({ error: "Schema ID required" });
+router.put("/", requireToken(), async (req: Request, res: Response) => {
+  const schemaId = req.schema!.id;
+  const hashedToken = req.token!;
 
   const schemaObject = z
     .object({
       name: z.string().min(1).max(255).optional(),
       definition: z.record(z.string(), z.unknown()).optional(),
     })
-    .refine((d) => d.name !== undefined || d.definition !== undefined, {
-      message: "At least one of name or definition is required",
-    });
+    .partial()
+    .refine((d) => d.name !== undefined && d.definition !== undefined, {
+      message: "Update Requires Atleast One Field",
+    })
+    .transform((data) =>
+      Object.fromEntries(
+        Object.entries(data).filter(([, v]) => v !== undefined)
+      )
+    );
+
   const result = schemaObject.safeParse(req.body);
   if (!result.success) return res.status(400).json({ error: result.error.message });
 
-  const data = Object.fromEntries(
-    Object.entries(result.data).filter(([, v]) => v !== undefined)
-  ) as { name?: string; definition?: object };
-
   try {
-    const existing = await prisma.schema.findUnique({ where: { id: idResult.data } });
+    const existing = await prisma.schema.findUnique({ where: { id: schemaId, token: { tokenHash: hashedToken } } });
     if (!existing) return res.status(404).json({ error: "Schema Not Found" });
 
     const schema = await prisma.schema.update({
-      where: { id: idResult.data },
-      data,
+      where: { id: schemaId, token: { tokenHash: hashedToken } },
+      data: result.data,
     });
     return res.status(200).json(schema);
   } catch (error) {
@@ -82,15 +90,15 @@ router.put("/:id", requireToken(), async (req: Request, res: Response) => {
   }
 });
 
-router.delete("/:id", requireToken(), async (req: Request, res: Response) => {
-  const idResult = z.uuid().safeParse(req.params.id);
-  if (!idResult.success) return res.status(400).json({ error: "Schema ID required" });
+router.delete("/", requireToken(), async (req: Request, res: Response) => {
+  const schemaId = req.schema!.id;
+  const hashedToken = req.token!;
 
   try {
-    const existing = await prisma.schema.findUnique({ where: { id: idResult.data } });
+    const existing = await prisma.schema.findUnique({ where: { id: schemaId, token: { tokenHash: hashedToken } } });
     if (!existing) return res.status(404).json({ error: "Schema Not Found" });
 
-    await prisma.schema.delete({ where: { id: idResult.data } });
+    await prisma.schema.delete({ where: { id: schemaId, token: { tokenHash: hashedToken } } });
     return res.status(204).send();
   } catch (error) {
     return res.status(500).json({ error: error instanceof Error ? error.message : "Internal Server Error" });
