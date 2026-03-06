@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { Column } from '@/types/schema';
 
@@ -47,12 +48,12 @@ function ColumnRow({ col }: { col: Column }) {
     );
 }
 
-export default function TableNode({ data }: { data: TableNodeData }) {
+function TableNode({ data }: { data: TableNodeData }) {
     const pkCols = data.columns.filter(c => c.primaryKey);
     const otherCols = data.columns.filter(c => !c.primaryKey);
 
     return (
-        <div className="w-[320px] min-w-[320px] rounded-lg border border-neutral-700 bg-neutral-900 shadow-xl shadow-black/40 overflow-hidden">
+        <div className="w-[320px] min-w-[320px] rounded-lg border border-neutral-700 bg-neutral-900 shadow-lg overflow-hidden">
             {/* Handles */}
             <Handle type="target" position={Position.Left} className="!w-2.5 !h-2.5 !bg-blue-500 !border-2 !border-blue-300" />
             <Handle type="source" position={Position.Right} className="!w-2.5 !h-2.5 !bg-blue-500 !border-2 !border-blue-300" />
@@ -75,3 +76,5 @@ export default function TableNode({ data }: { data: TableNodeData }) {
         </div>
     );
 }
+
+export default memo(TableNode);

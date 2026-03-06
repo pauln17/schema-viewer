@@ -18,7 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import EditorSidebar from '@/components/editor-sidebar';
 import EditorNavbar from '@/components/editor-navbar';
 import TableNode from '@/components/table-node';
-import type { Table, Enum } from '@/types/schema';
+import type { Table, Enum, Schema } from '@/types/schema';
 
 function buildNodes(tables: Table[]): Node[] {
     return tables.map(t => ({
@@ -40,7 +40,6 @@ function buildEdges(tables: Table[]): Edge[] {
                     source: table.name,
                     target: col.references.table,
                     type: 'smoothstep',
-                    animated: true,
                     style: { stroke: '#525252' },
                 });
             }
@@ -53,7 +52,7 @@ export default function Editor() {
     const router = useRouter();
     const token = router.query.token as string | undefined;
 
-    const { data: schemas } = useQuery({
+    const { data: schemas } = useQuery<Schema | null>({
         queryKey: ['schemas', token],
         queryFn: async () => {
             const res = await fetch('http://127.0.0.1:5001/schemas', {
@@ -125,7 +124,6 @@ export default function Editor() {
                 colorMode="dark"
                 proOptions={{ hideAttribution: true }}
                 fitView
-
             >
                 <Background color="#555555" className="!bg-black" />
                 <Controls className="!mr-5" position="top-right" />

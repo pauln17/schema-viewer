@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import type { Column, Table, Enum } from '@/types/schema';
 
 interface EditorSidebarProps {
@@ -17,7 +17,6 @@ interface TableSectionProps {
 const SQL_TYPES = ['UUID', 'VARCHAR', 'TEXT', 'INTEGER', 'BIGINT', 'BOOLEAN', 'DATE', 'TIMESTAMP', 'FLOAT', 'DECIMAL', 'JSON'];
 
 const CONSTRAINT_STYLES: Record<string, { on: string; off: string }> = {
-    FK: { on: 'bg-blue-500/20 text-blue-400', off: 'bg-white/[0.04] text-neutral-600 hover:text-blue-400/60' },
     NN: { on: 'bg-red-500/20 text-red-400', off: 'bg-white/[0.04] text-neutral-600 hover:text-red-400/60' },
     UQ: { on: 'bg-cyan-500/20 text-cyan-400', off: 'bg-white/[0.04] text-neutral-600 hover:text-cyan-400/60' },
     DEFAULT: { on: 'bg-emerald-500/20 text-emerald-400', off: 'bg-white/[0.04] text-neutral-600 hover:text-emerald-400/60' },
@@ -150,6 +149,15 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                                             <path d="M0 8a4 4 0 0 1 7.465-2H14a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1h-1v1a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1V9H7.465A4 4 0 0 1 0 8Zm4-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
                                         </svg>
                                     </button>
+                                    <button
+                                        onClick={() => toggleFk(col.name)}
+                                        className={`cursor-pointer shrink-0 transition-colors ${col.references ? 'text-blue-400' : 'text-neutral-700 hover:text-blue-400/60'}`}
+                                        title={col.references ? 'Remove foreign key' : 'Add foreign key'}
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                        </svg>
+                                    </button>
                                     <span className="text-xs text-neutral-200 truncate">{col.name}</span>
                                 </div>
                                 {/* Dropdown Menu for Data/Enum Type */}
@@ -184,7 +192,6 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
 
                             {/* Constraints Buttons*/}
                             <div className="flex items-center gap-1">
-                                <ConstraintToggle label="FK" active={!!col.references} onClick={() => toggleFk(col.name)} />
                                 <ConstraintToggle label="NN" active={!!col.notNull} onClick={() => toggleConstraint(col.name, 'notNull')} />
                                 <ConstraintToggle label="UQ" active={!!col.unique} onClick={() => toggleConstraint(col.name, 'unique')} />
                                 <ConstraintToggle label="DEFAULT" active={col.default !== undefined} onClick={() => toggleDefault(col.name)} />
@@ -284,7 +291,7 @@ function EnumSection({ enumDef }: { enumDef: Enum }) {
     );
 }
 
-export default function EditorSidebar({ tables, enums, onTablesChange }: EditorSidebarProps) {
+function EditorSidebar({ tables, enums, onTablesChange }: EditorSidebarProps) {
 
     // Creates a Function w/ Passed Down Handler Function (Handles Table Changes) -> Builds New Array w/ Updated Table, Sends Upwards To Editor.tsx
     const handleTableChange = (updated: Table) => {
@@ -348,3 +355,5 @@ export default function EditorSidebar({ tables, enums, onTablesChange }: EditorS
         </div>
     );
 }
+
+export default memo(EditorSidebar);

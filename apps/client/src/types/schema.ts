@@ -8,15 +8,21 @@ export interface Column {
     references?: { table: string; column: string };
 }
 
+export interface Enum {
+    name: string;
+    values: string[];
+}
+
 export interface Table {
     name: string;
     position: { x: number; y: number };
     columns: Column[];
 }
 
-export interface Enum {
+export interface Index {
+    table: string;
+    columns: string[];
     name: string;
-    values: string[];
 }
 
 export interface Schema {
@@ -25,7 +31,8 @@ export interface Schema {
     definition: {
         tables: Table[];
         enums: Enum[];
-    }
+        indexes?: Index[];
+    };
     createdAt: Date;
     updatedAt: Date;
 }
