@@ -5,7 +5,7 @@ export interface Column {
     notNull?: boolean;
     unique?: boolean;
     default?: string;
-    references?: { table: string; column: string };
+    references?: { referencedTable: string; referencedColumn: string };
 }
 
 export interface Enum {
@@ -14,8 +14,7 @@ export interface Enum {
 }
 
 export interface Index {
-    table: string;
-    columns: string[];
+    indexedColumn: string;
     name: string;
 }
 
@@ -30,8 +29,8 @@ export interface Schema {
     id: string;
     name: string;
     definition: {
-        tables: Table[];
         enums: Enum[];
+        tables: Table[];
     };
     createdAt: Date;
     updatedAt: Date;

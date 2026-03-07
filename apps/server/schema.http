@@ -1,5 +1,9 @@
 @baseUrl = http://localhost:5001
-@token = f9b94f8bdfe88281b83ae688cb08408f73d33be3843f6f49b1f763c64cbe5411
+@token = 99c4394912c2b62c33b857c36d71119b727dfed24413b957e1aca3195f6ceb17
+
+### Get Schema
+GET {{baseUrl}}/schemas
+Authorization: Bearer {{token}}
 
 ### Create Schema
 POST {{baseUrl}}/schemas
@@ -15,6 +19,7 @@ Content-Type: application/json
     "tables": [
       {
         "name": "users",
+        "position": { "x": 0, "y": 0 },
         "columns": [
           { "name": "id", "type": "UUID", "primaryKey": true, "default": "gen_random_uuid()" },
           { "name": "email", "type": "VARCHAR", "length": 255, "unique": true, "notNull": true },
@@ -22,58 +27,69 @@ Content-Type: application/json
           { "name": "active", "type": "BOOLEAN", "default": true, "notNull": true },
           { "name": "birth_date", "type": "DATE" },
           { "name": "created_at", "type": "TIMESTAMP", "default": "now()", "notNull": true }
-        ]
+        ],
+        "indexes": []
       },
       {
         "name": "posts",
+        "position": { "x": 320, "y": 0 },
         "columns": [
           { "name": "id", "type": "UUID", "primaryKey": true, "default": "gen_random_uuid()" },
-          { "name": "user_id", "type": "UUID", "notNull": true, "references": { "table": "users", "column": "id" } },
+          { "name": "user_id", "type": "UUID", "notNull": true, "references": { "referencedTable": "users", "referencedColumn": "id" } },
           { "name": "title", "type": "VARCHAR", "length": 500, "notNull": true },
           { "name": "body", "type": "VARCHAR", "length": 10000 },
           { "name": "status", "type": "post_status", "default": "draft", "check": "status IN ('draft', 'published', 'archived')" },
           { "name": "view_count", "type": "BIGINT", "default": 0, "notNull": true },
           { "name": "published_at", "type": "TIMESTAMP" },
           { "name": "created_at", "type": "TIMESTAMP", "default": "now()", "notNull": true }
+        ],
+        "indexes": [
+          { "indexedColumn": "user_id", "name": "idx_posts_user_id" },
+          { "indexedColumn": "status", "name": "idx_posts_status" },
+          { "indexedColumn": "published_at", "name": "idx_posts_published_at" }
         ]
       },
       {
         "name": "comments",
+        "position": { "x": 640, "y": 0 },
         "columns": [
           { "name": "id", "type": "UUID", "primaryKey": true, "default": "gen_random_uuid()" },
-          { "name": "post_id", "type": "UUID", "notNull": true, "references": { "table": "posts", "column": "id" } },
-          { "name": "user_id", "type": "UUID", "notNull": true, "references": { "table": "users", "column": "id" } },
+          { "name": "post_id", "type": "UUID", "notNull": true, "references": { "referencedTable": "posts", "referencedColumn": "id" } },
+          { "name": "user_id", "type": "UUID", "notNull": true, "references": { "referencedTable": "users", "referencedColumn": "id" } },
           { "name": "content", "type": "VARCHAR", "length": 2000, "notNull": true },
           { "name": "created_at", "type": "TIMESTAMP", "default": "now()", "notNull": true }
+        ],
+        "indexes": [
+          { "indexedColumn": "post_id", "name": "idx_comments_post_id" },
+          { "indexedColumn": "user_id", "name": "idx_comments_user_id" }
         ]
       },
       {
         "name": "tags",
+        "position": { "x": 0, "y": 280 },
         "columns": [
           { "name": "id", "type": "UUID", "primaryKey": true, "default": "gen_random_uuid()" },
           { "name": "name", "type": "VARCHAR", "length": 100, "unique": true, "notNull": true }
-        ]
+        ],
+        "indexes": []
       },
       {
         "name": "post_tags",
+        "position": { "x": 320, "y": 280 },
         "columns": [
-          { "name": "post_id", "type": "UUID", "references": { "table": "posts", "column": "id" }, "primaryKey": true },
-          { "name": "tag_id", "type": "UUID", "references": { "table": "tags", "column": "id" }, "primaryKey": true }
-        ]
+          { "name": "post_id", "type": "UUID", "references": { "referencedTable": "posts", "referencedColumn": "id" }, "primaryKey": true },
+          { "name": "tag_id", "type": "UUID", "references": { "referencedTable": "tags", "referencedColumn": "id" }, "primaryKey": true }
+        ],
+        "indexes": []
       }
-    ],
-    "indexes": [
-      { "table": "posts", "columns": ["user_id"], "name": "idx_posts_user_id" },
-      { "table": "posts", "columns": ["status", "published_at"], "name": "idx_posts_status_published" },
-      { "table": "comments", "columns": ["post_id"], "name": "idx_comments_post_id" },
-      { "table": "comments", "columns": ["user_id"], "name": "idx_comments_user_id" }
     ]
   }
 }
 
-### Get Schemas
-GET {{baseUrl}}/schemas
+### Delete Schema
+DELETE {{baseUrl}}/schemas
 Authorization: Bearer {{token}}
+
 
 
 

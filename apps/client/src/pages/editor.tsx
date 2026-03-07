@@ -24,11 +24,11 @@ function buildNodes(tables: Table[], enums: Enum[]): Node[] {
     return tables.map(t => ({
         id: t.name,
         type: 'table',
-        position: { x: 0, y: 0 },
+        position: t.position,
         data: {
             label: t.name,
             columns: t.columns,
-            indexes: t.indexes ?? [],
+            indexes: t.indexes,
             enums,
         },
     }));
@@ -41,9 +41,9 @@ function buildEdges(tables: Table[]): Edge[] {
             if (col.references) {
                 edges.push({
                     // List Table Name, Foreign Table Name, Foreign Column Name
-                    id: `${table.name}-${col.references.table}-${col.name}`,
+                    id: `${table.name}-${col.references.referencedTable}-${col.name}`,
                     source: table.name,
-                    target: col.references.table,
+                    target: col.references.referencedTable,
                     type: 'smoothstep',
                     style: { stroke: '#525252' },
                 });
@@ -60,7 +60,7 @@ export default function Editor() {
     const { data: schemas } = useQuery<Schema | null>({
         queryKey: ['schemas', token],
         queryFn: async () => {
-            const res = await fetch('http://127.0.0.1:5001/schemas', {
+            const res = await fetch('http://localhost:5001/schemas', {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -80,8 +80,8 @@ export default function Editor() {
     });
 
     const [activeTab, setActiveTab] = useState('editor');
-    const [tables, setTables] = useState<Table[]>(schemas?.definition?.tables ?? []);
-    const [enums, setEnums] = useState<Enum[]>(schemas?.definition?.enums ?? []);
+    const [tables, setTables] = useState<Table[]>([]);
+    const [enums, setEnums] = useState<Enum[]>([]);
     const [flowNodes, setFlowNodes] = useState<Node[]>(() => buildNodes(tables, enums));
     const [flowEdges, setFlowEdges] = useState<Edge[]>(() => buildEdges(tables));
 

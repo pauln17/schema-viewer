@@ -22,11 +22,6 @@ export const requireToken = (): ((req: Request, res: Response, next: NextFunctio
       return;
     }
 
-    const schemaId = req.params.id;
-    if (schemaId && verificationResult.schemaId !== schemaId) {
-      res.status(403).json({ error: "Invalid Token for Schema" });
-      return;
-    }
     req.schema = { id: verificationResult.schemaId };
     req.token = hashToken(token);
     next();

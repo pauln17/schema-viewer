@@ -6,6 +6,24 @@ import { requireToken } from "./middleware/requireToken";
 
 const router = Router();
 
+const definitionSchema = z.object({
+  enums: z.array(z.object({ name: z.string(), values: z.array(z.string()) })),
+  tables: z.array(z.object({
+    name: z.string(),
+    position: z.object({ x: z.number().default(0), y: z.number().default(0) }).default({ x: 0, y: 0 }),
+    columns: z.array(z.object({
+      name: z.string(),
+      type: z.string(),
+      primaryKey: z.boolean().optional(),
+      unique: z.boolean().optional(),
+      notNull: z.boolean().optional(),
+      default: z.string().optional(),
+      references: z.object({ table: z.string(), column: z.string() }).optional(),
+    })),
+    indexes: z.array(z.object({ indexedColumn: z.string(), name: z.string() })),
+  })),
+});
+
 router.get("/", requireToken(), async (req: Request, res: Response) => {
   const schemaId = req.schema!.id;
   const hashedToken = req.token!;
@@ -25,7 +43,7 @@ router.get("/", requireToken(), async (req: Request, res: Response) => {
 router.post("/", async (req: Request, res: Response) => {
   const schemaObject = z.object({
     name: z.string().min(1).max(255),
-    definition: z.record(z.string(), z.unknown()).optional(),
+    definition: definitionSchema,
   });
 
   const result = schemaObject.safeParse(req.body);
@@ -34,10 +52,7 @@ router.post("/", async (req: Request, res: Response) => {
   const { name, definition } = result.data;
   try {
     const schema = await prisma.schema.create({
-      data: {
-        name,
-        ...(definition !== undefined && { definition: definition as object }),
-      },
+      data: { name, definition },
     });
     const rawToken = generateToken();
     await prisma.schemaToken.create({
@@ -58,39 +73,11 @@ router.put("/", requireToken(), async (req: Request, res: Response) => {
   const schemaId = req.schema!.id;
   const hashedToken = req.token!;
 
-  const definitionObject = z.object({
-    enums: z.array(z.object({
-      name: z.string(),
-      values: z.array(z.string()),
-    })).optional(),
-    tables: z.array(z.object({
-      name: z.string(),
-      position: z.object({
-        x: z.number(),
-        y: z.number(),
-      }),
-      columns: z.array(z.object({
-        name: z.string(),
-        type: z.string(),
-        primaryKey: z.boolean().optional(),
-        unique: z.boolean().optional(),
-        notNull: z.boolean().optional(),
-        default: z.string().optional(),
-      })),
-      indexes: z.array(z.object({
-        table: z.string(),
-        columns: z.array(z.string()),
-        name: z.string(),
-      })).optional(),
-    })).optional()
-  });
-
   const schemaObject = z
     .object({
       name: z.string().min(1).max(255).optional(),
-      definition: definitionObject.optional(),
+      definition: definitionSchema,
     })
-    .partial()
     .refine((d) => !(d.name === undefined && d.definition === undefined), {
       message: "Update Requires Atleast One Field",
     })

@@ -35,26 +35,29 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
     const [expanded, setExpanded] = useState(false);
     const [editingDefaultColumn, setEditingDefaultColumn] = useState<string | null>(null);
 
+    const tableColumns = table.columns ?? [];
+    const tableIndexes = table.indexes ?? [];
+
     // Primary Key Columns for Header Badge + Enum Names (always uppercase for display)
-    const pkColumns = new Set(table.columns.filter(c => c.primaryKey).map(c => c.name));
+    const pkColumns = new Set(tableColumns.filter(c => c.primaryKey).map(c => c.name));
     const enumNames = enums.map(e => e.name.toUpperCase());
 
     // Updates Column in Table By Accepting a Partial<Column> Input (Everything is Optional -> Only Updates Fields Given) -> Returns Updated Table Object
     const updateColumn = (colName: string, patch: Partial<Column>) => {
         onTableChange({
             ...table,
-            columns: table.columns.map(c => c.name === colName ? { ...c, ...patch } : c),
+            columns: tableColumns.map(c => c.name === colName ? { ...c, ...patch } : c),
         });
     };
 
     // Toggling PK, FK, Constraints Buttons
     const togglePk = (colName: string) => {
-        const col = table.columns.find(c => c.name === colName);
+        const col = tableColumns.find(c => c.name === colName);
         if (col) updateColumn(colName, { primaryKey: !col.primaryKey });
     };
 
     const toggleFk = (colName: string) => {
-        const col = table.columns.find(c => c.name === colName);
+        const col = tableColumns.find(c => c.name === colName);
         if (!col) return;
         if (col.references) {
             updateColumn(colName, { references: undefined });
@@ -68,10 +71,9 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
     };
 
     const toggleConstraint = (colName: string, field: 'notNull' | 'unique') => {
-        const col = table.columns.find(c => c.name === colName);
+        const col = tableColumns.find(c => c.name === colName);
         if (col) updateColumn(colName, { [field]: !col[field] });
     };
-
 
     const changeFkTable = (colName: string, newTable: string) => {
         const target = allTables.find(t => t.name === newTable);
@@ -81,7 +83,7 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
     };
 
     const changeFkColumn = (colName: string, newCol: string) => {
-        const col = table.columns.find(c => c.name === colName);
+        const col = tableColumns.find(c => c.name === colName);
         if (!col?.references) return;
         updateColumn(colName, { references: { table: col.references.table, column: newCol } });
     };
@@ -92,7 +94,7 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
     };
 
     const toggleDefault = (colName: string) => {
-        const col = table.columns.find(c => c.name === colName);
+        const col = tableColumns.find(c => c.name === colName);
         if (!col) return;
 
         if (col.default !== undefined || editingDefaultColumn === colName) {
@@ -110,15 +112,13 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
     };
 
     const fkTargetTables = allTables.filter(t => t.name !== table.name);
-    const tableIndexes = table.indexes ?? [];
 
-    const indexedColumns = new Set(tableIndexes.flatMap(i => i.columns));
+    const indexedColumns = new Set(tableIndexes.map(i => i.indexedColumn));
 
     const addIndex = () => {
-        const firstCol = table.columns.find(c => !indexedColumns.has(c.name))?.name ?? table.columns[0]?.name ?? 'id';
-        if (indexedColumns.has(firstCol)) return;
-        const name = `idx_${table.name}_${firstCol}`;
-        const newIndex: Index = { table: table.name, columns: [firstCol], name };
+        const firstNonIndexedCol = tableColumns.find(c => !indexedColumns.has(c.name))!.name;
+        const name = `idx_${table.name}_${firstNonIndexedCol}`;
+        const newIndex: Index = { indexedColumn: firstNonIndexedCol, name };
         onTableChange({ ...table, indexes: [...tableIndexes, newIndex] });
     };
 
@@ -158,14 +158,14 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                             }
                         </span>
                     )}
-                    <span className="text-[10px] text-neutral-500 font-mono">{table.columns.length}</span>
+                    <span className="text-[10px] text-neutral-500 font-mono">{tableColumns.length}</span>
                 </div>
             </button>
 
             {/* Columns*/}
             {expanded && (
                 <div>
-                    {table.columns.map((col) => (
+                    {tableColumns.map((col) => (
                         <div key={col.name} className="px-3 py-2.5 ml-3 border-b border-white/[0.03] last:border-b-0 hover:bg-white/[0.02] transition-colors space-y-2">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 min-w-0">
@@ -295,7 +295,7 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                             <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">Indexes</span>
                             <button
                                 onClick={addIndex}
-                                disabled={table.columns.every(c => indexedColumns.has(c.name))}
+                                disabled={tableColumns.every(c => indexedColumns.has(c.name))}
                                 className="cursor-pointer p-1 rounded text-neutral-500 hover:text-violet-400 hover:bg-white/[0.06] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-neutral-500"
                                 title="Add index"
                             >
@@ -309,20 +309,21 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                         ) : (
                             <div className="space-y-1.5">
                                 {tableIndexes.map(idx => {
-                                    const col = idx.columns[0] ?? '';
+                                    const indexedCol = idx.indexedColumn;
                                     const indexedByOthers = new Set(
-                                        tableIndexes.filter(i => i.name !== idx.name).flatMap(i => i.columns)
+                                        tableIndexes.filter(i => i.name !== idx.name).map(i => i.indexedColumn)
                                     );
-                                    const availableColumns = table.columns.filter(
-                                        c => c.name === col || !indexedByOthers.has(c.name)
+                                    const availableColumns = tableColumns.filter(
+                                        c => c.name === indexedCol || !indexedByOthers.has(c.name)
                                     );
                                     const handleColumnChange = (newCol: string) => {
-                                        updateIndex(idx.name, { columns: [newCol], name: `idx_${table.name}_${newCol}` });
+                                        updateIndex(idx.name, { indexedColumn: newCol, name: `idx_${table.name}_${newCol}` });
                                     };
+
                                     return (
                                         <div key={idx.name} className="flex items-center gap-2 group">
                                             <select
-                                                value={col}
+                                                value={indexedCol}
                                                 onChange={(e) => handleColumnChange(e.target.value)}
                                                 className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-[10px] font-mono text-neutral-400 outline-none focus:border-violet-500/50 cursor-pointer"
                                             >
