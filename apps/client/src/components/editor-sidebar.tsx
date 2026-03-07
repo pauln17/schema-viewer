@@ -1,17 +1,21 @@
 import { useState, memo } from 'react';
-import type { Column, Table, Enum } from '@/types/schema';
+import type { Column, Table, Enum, Index } from '@/types/schema';
 
 interface EditorSidebarProps {
     tables: Table[];
     enums: Enum[];
+    indexes: Index[];
     onTablesChange: (tables: Table[]) => void;
+    onIndexesChange: (indexes: Index[]) => void;
 }
 
 interface TableSectionProps {
     table: Table;
     allTables: Table[];
     enums: Enum[];
+    indexes: Index[];
     onTableChange: (updated: Table) => void;
+    onIndexesChange: (indexes: Index[]) => void;
 }
 
 const SQL_TYPES = ['UUID', 'VARCHAR', 'TEXT', 'INTEGER', 'BIGINT', 'BOOLEAN', 'DATE', 'TIMESTAMP', 'FLOAT', 'DECIMAL', 'JSON'];
@@ -31,10 +35,10 @@ function ConstraintToggle({ label, active, onClick }: { label: string; active: b
     );
 }
 
-function TableSection({ table, allTables, enums, onTableChange }: TableSectionProps) {
+function TableSection({ table, allTables, enums, indexes, onTableChange, onIndexesChange }: TableSectionProps) {
     const [expanded, setExpanded] = useState(false);
 
-    // Primary Key Columns for Header Badge + Enum Names
+    // Primary Key Columns for Header Badge + Enum Names (always uppercase for display)
     const pkColumns = new Set(table.columns.filter(c => c.primaryKey).map(c => c.name));
     const enumNames = enums.map(e => e.name.toUpperCase());
 
@@ -96,11 +100,22 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
         if (col) updateColumn(colName, { default: col.default !== undefined ? undefined : '' });
     };
 
-    const changeDefault = (colName: string, value: string) => {
-        updateColumn(colName, { default: value === '' ? undefined : value });
+    const fkTargetTables = allTables.filter(t => t.name !== table.name);
+    const tableIndexes = indexes.filter(i => i.table === table.name);
+
+    const addIndex = () => {
+        const name = `idx_${table.name}_${tableIndexes.length + 1}`;
+        const firstCol = table.columns[0]?.name ?? 'id';
+        onIndexesChange([...indexes, { table: table.name, columns: [firstCol], name }]);
     };
 
-    const fkTargetTables = allTables.filter(t => t.name !== table.name);
+    const updateIndex = (idxName: string, patch: Partial<Index>) => {
+        onIndexesChange(indexes.map(i => i.name === idxName ? { ...i, ...patch } : i));
+    };
+
+    const removeIndex = (idxName: string) => {
+        onIndexesChange(indexes.filter(i => i.name !== idxName));
+    };
 
     return (
         <div className={`rounded-lg overflow-hidden border transition-colors ${expanded ? 'border-white/[0.1] bg-white/[0.02]' : 'border-white/[0.06]'}`}>
@@ -162,28 +177,31 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                                 </div>
                                 {/* Dropdown Menu for Data/Enum Type */}
                                 <div className="relative inline-flex items-center shrink-0">
-                                    <select
-                                        value={col.type}
-                                        onChange={(e) => changeType(col.name, e.target.value)}
-                                        className="appearance-none bg-transparent text-[11px] text-neutral-500 font-mono border-none outline-none cursor-pointer hover:text-neutral-300 transition-colors pr-3.5 pl-0"
-                                        style={{ width: `${col.type.length + 3}ch` }}
-                                    >
-                                        {!SQL_TYPES.includes(col.type) && !enumNames.includes(col.type) && (
-                                            <option value={col.type} className="bg-neutral-800 text-neutral-300">{col.type}</option>
-                                        )}
-                                        <optgroup label="Data Types" className="bg-neutral-800 text-neutral-400">
-                                            {SQL_TYPES.map(t => (
-                                                <option key={t} value={t} className="bg-neutral-800 text-neutral-300">{t}</option>
-                                            ))}
-                                        </optgroup>
-                                        {enumNames.length > 0 && (
-                                            <optgroup label="Enums" className="bg-neutral-800 text-neutral-400">
-                                                {enumNames.map(e => (
-                                                    <option key={e} value={e} className="bg-neutral-800 text-neutral-300">{e}</option>
-                                                ))}
-                                            </optgroup>
-                                        )}
-                                    </select>
+                                    {(() => {
+                                        const isEnumType = enumNames.includes(col.type.toUpperCase());
+                                        const normalizedType = isEnumType ? col.type.toUpperCase() : col.type;
+                                        return (
+                                            <select
+                                                value={normalizedType}
+                                                onChange={(e) => changeType(col.name, e.target.value)}
+                                                className="appearance-none bg-transparent text-[11px] text-neutral-500 font-mono border-none outline-none cursor-pointer hover:text-neutral-300 transition-colors pr-3.5 pl-0"
+                                                style={{ width: `${normalizedType.length + 3}ch` }}
+                                            >
+                                                <optgroup label="Data Types" className="bg-neutral-800 text-neutral-400">
+                                                    {SQL_TYPES.map(t => (
+                                                        <option key={t} value={t} className="bg-neutral-800 text-neutral-300">{t}</option>
+                                                    ))}
+                                                </optgroup>
+                                                {enumNames.length > 0 && (
+                                                    <optgroup label="Enums" className="bg-neutral-800 text-neutral-400">
+                                                        {enumNames.map(e => (
+                                                            <option key={e} value={e} className="bg-neutral-800 text-neutral-300">{e}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                )}
+                                            </select>
+                                        );
+                                    })()}
                                     <svg className="absolute right-0 w-3 h-3 pointer-events-none text-neutral-600" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5l3 3 3-3" />
                                     </svg>
@@ -195,14 +213,6 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                                 <ConstraintToggle label="NN" active={!!col.notNull} onClick={() => toggleConstraint(col.name, 'notNull')} />
                                 <ConstraintToggle label="UQ" active={!!col.unique} onClick={() => toggleConstraint(col.name, 'unique')} />
                                 <ConstraintToggle label="DEFAULT" active={col.default !== undefined} onClick={() => toggleDefault(col.name)} />
-                                <input
-                                    type="text"
-                                    value={col.default ?? ''}
-                                    onChange={(e) => changeDefault(col.name, e.target.value)}
-                                    placeholder="value"
-                                    disabled={col.default === undefined}
-                                    className="w-24 h-[22px] shrink-0 bg-white/[0.04] border border-white/[0.06] rounded px-1.5 py-0.5 text-[10px] font-mono text-neutral-400 placeholder-neutral-600 outline-none focus:border-white/[0.12] disabled:opacity-0 disabled:pointer-events-none disabled:cursor-default"
-                                />
                             </div>
 
                             {/* Dropdown Menu for FK Target Table and Column */}
@@ -218,7 +228,6 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                                             <option key={t.name} value={t.name} className="bg-neutral-800 text-neutral-300">{t.name}</option>
                                         ))}
                                     </select>
-                                    <span className="text-neutral-600 text-[10px]">.</span>
                                     <select
                                         value={col.references.column}
                                         onChange={(e) => changeFkColumn(col.name, e.target.value)}
@@ -232,6 +241,60 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                             )}
                         </div>
                     ))}
+
+                    {/* Indexes */}
+                    <div className="px-3 pt-1 pb-1 ml-3 border-t border-white/[0.06] space-y-1.5 -mt-px">
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">Indexes</span>
+                            <button
+                                onClick={addIndex}
+                                className="cursor-pointer p-1 rounded text-neutral-500 hover:text-violet-400 hover:bg-white/[0.06] transition-colors"
+                                title="Add index"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                </svg>
+                            </button>
+                        </div>
+                        {indexes.filter(i => i.table === table.name).length === 0 ? (
+                            <p className="text-[10px] text-neutral-600 italic py-1">No Indexes</p>
+                        ) : (
+                            <div className="space-y-1.5">
+                                {indexes.filter(i => i.table === table.name).map(idx => {
+                                    const col = idx.columns[0] ?? '';
+                                    const handleColumnChange = (newCol: string) => {
+                                        const baseName = `idx_${table.name}_${newCol}`;
+                                        const taken = new Set(tableIndexes.filter(i => i.name !== idx.name).map(i => i.name));
+                                        let name = baseName;
+                                        for (let n = 2; taken.has(name); n++) name = `${baseName}_${n}`;
+                                        updateIndex(idx.name, { columns: [newCol], name });
+                                    };
+                                    return (
+                                        <div key={idx.name} className="flex items-center gap-2 group">
+                                            <select
+                                                value={col}
+                                                onChange={(e) => handleColumnChange(e.target.value)}
+                                                className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-[10px] font-mono text-neutral-400 outline-none focus:border-violet-500/50 cursor-pointer"
+                                            >
+                                                {table.columns.map(c => (
+                                                    <option key={c.name} value={c.name} className="bg-neutral-800">{c.name}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                onClick={() => removeIndex(idx.name)}
+                                                className="p-1 text-neutral-500 hover:text-red-400 transition-colors shrink-0"
+                                                title="Remove index"
+                                            >
+                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Add Column */}
                     <button className="cursor-pointer w-full flex items-center justify-center gap-1.5 px-3 py-2 text-neutral-500 hover:text-blue-400 hover:bg-white/[0.04] transition-colors">
@@ -291,9 +354,8 @@ function EnumSection({ enumDef }: { enumDef: Enum }) {
     );
 }
 
-function EditorSidebar({ tables, enums, onTablesChange }: EditorSidebarProps) {
+function EditorSidebar({ tables, enums, indexes, onTablesChange, onIndexesChange }: EditorSidebarProps) {
 
-    // Creates a Function w/ Passed Down Handler Function (Handles Table Changes) -> Builds New Array w/ Updated Table, Sends Upwards To Editor.tsx
     const handleTableChange = (updated: Table) => {
         onTablesChange(tables.map(t => t.name === updated.name ? updated : t));
     };
@@ -315,7 +377,7 @@ function EditorSidebar({ tables, enums, onTablesChange }: EditorSidebarProps) {
                 <div className="space-y-2">
                     {/* Requires Enums For Type Display */}
                     {tables.map((table) => (
-                        <TableSection key={table.name} table={table} allTables={tables} enums={enums} onTableChange={handleTableChange} />
+                        <TableSection key={table.name} table={table} allTables={tables} enums={enums} indexes={indexes} onTableChange={handleTableChange} onIndexesChange={onIndexesChange} />
                     ))}
                 </div>
 

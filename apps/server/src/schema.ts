@@ -77,12 +77,12 @@ router.put("/", requireToken(), async (req: Request, res: Response) => {
         notNull: z.boolean().optional(),
         default: z.string().optional(),
       })),
-    })).optional(),
-    indexes: z.array(z.object({
-      table: z.string(),
-      columns: z.array(z.string()),
-      name: z.string(),
-    })).optional(),
+      indexes: z.array(z.object({
+        table: z.string(),
+        columns: z.array(z.string()),
+        name: z.string(),
+      })).optional(),
+    })).optional()
   });
 
   const schemaObject = z

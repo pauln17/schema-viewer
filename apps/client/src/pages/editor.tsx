@@ -18,14 +18,19 @@ import { useQuery } from '@tanstack/react-query';
 import EditorSidebar from '@/components/editor-sidebar';
 import EditorNavbar from '@/components/editor-navbar';
 import TableNode from '@/components/table-node';
-import type { Table, Enum, Schema } from '@/types/schema';
+import type { Table, Enum, Index, Schema } from '@/types/schema';
 
-function buildNodes(tables: Table[]): Node[] {
+function buildNodes(tables: Table[], indexes: Index[], enums: Enum[]): Node[] {
     return tables.map(t => ({
         id: t.name,
         type: 'table',
         position: { x: 0, y: 0 },
-        data: { label: t.name, columns: t.columns },
+        data: {
+            label: t.name,
+            columns: t.columns,
+            indexes: indexes.filter(i => i.table === t.name),
+            enums,
+        },
     }));
 }
 
@@ -74,27 +79,30 @@ export default function Editor() {
         enabled: !!token && router.isReady,
     });
 
+    const [activeTab, setActiveTab] = useState('editor');
     const [tables, setTables] = useState<Table[]>(schemas?.definition?.tables || []);
     const [enums, setEnums] = useState<Enum[]>(schemas?.definition?.enums || []);
-    const [activeTab, setActiveTab] = useState('editor');
-    const [flowNodes, setFlowNodes] = useState<Node[]>(() => buildNodes(tables));
+    const [indexes, setIndexes] = useState<Index[]>(schemas?.definition?.indexes || []);
+    const [flowNodes, setFlowNodes] = useState<Node[]>(() => buildNodes(tables, indexes, enums));
     const [flowEdges, setFlowEdges] = useState<Edge[]>(() => buildEdges(tables));
 
+    // Syncs API Data to Local State
     useEffect(() => {
         if (schemas) {
             setTables(schemas.definition.tables);
-            setFlowNodes(buildNodes(schemas.definition.tables));
-            setFlowEdges(buildEdges(schemas.definition.tables));
+            setIndexes(schemas.definition.indexes ?? []);
             setEnums(schemas.definition.enums);
         }
     }, [schemas]);
 
-    // Handles Table Changes -- Updates List of All Tables & Derives it For React Flow Nodes & Edges
-    const handleTablesChange = useCallback((updated: Table[]) => {
-        setTables(updated);
-        setFlowNodes(buildNodes(updated));
-        setFlowEdges(buildEdges(updated));
-    }, []);
+    // Syncs Local State to React Flow
+    useEffect(() => {
+        setFlowNodes(buildNodes(tables, indexes, enums));
+        setFlowEdges(buildEdges(tables));
+    }, [tables, indexes, enums]);
+
+    const handleTablesChange = useCallback((updated: Table[]) => setTables(updated), []);
+    const handleIndexesChange = useCallback((updated: Index[]) => setIndexes(updated), []);
 
     // Custom Node Types for React Flow -> React Flow Matches Node Types to Component Names to Generate Nodes
     const nodeTypes = useMemo(() => ({ table: TableNode }), []);
@@ -138,7 +146,7 @@ export default function Editor() {
 
     return (
         <div className="flex w-screen h-screen overflow-hidden">
-            <EditorSidebar tables={tables} enums={enums} onTablesChange={handleTablesChange} />
+            <EditorSidebar tables={tables} enums={enums} indexes={indexes} onTablesChange={handleTablesChange} onIndexesChange={handleIndexesChange} />
             <div className="flex flex-col flex-1 overflow-hidden">
                 <EditorNavbar activeTab={activeTab} onTabChange={setActiveTab} />
                 {tabContent[activeTab]}

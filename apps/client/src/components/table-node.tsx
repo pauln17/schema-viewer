@@ -1,10 +1,12 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import type { Column } from '@/types/schema';
+import type { Column, Index, Enum } from '@/types/schema';
 
 interface TableNodeData {
     label: string;
     columns: Column[];
+    indexes?: Index[];
+    enums?: Enum[];
 }
 
 function ConstraintBadge({ text, color }: { text: string; color: string }) {
@@ -15,7 +17,8 @@ function ConstraintBadge({ text, color }: { text: string; color: string }) {
     );
 }
 
-function ColumnRow({ col }: { col: Column }) {
+function ColumnRow({ col, enums }: { col: Column; enums?: Enum[] }) {
+    const displayType = enums?.some(e => e.name.toUpperCase() === col.type.toUpperCase()) ? col.type.toUpperCase() : col.type;
     return (
         <div className={`flex items-center gap-3 px-4 py-2 hover:bg-neutral-800/50 transition-colors ${col.primaryKey ? 'shadow-[inset_2px_0_0_0_rgba(245,158,11,0.6)] bg-amber-500/[0.03]' : ''}`}>
             {/* Column Details */}
@@ -43,7 +46,7 @@ function ColumnRow({ col }: { col: Column }) {
             </div>
 
             {/* Column Type */}
-            <span className="text-[11px] text-neutral-500 font-mono w-24 shrink-0 text-right">{col.type}</span>
+            <span className="text-[11px] text-neutral-500 font-mono w-24 shrink-0 text-right">{displayType}</span>
         </div>
     );
 }
@@ -70,9 +73,30 @@ function TableNode({ data }: { data: TableNodeData }) {
 
             {/* Columns */}
             <div className="divide-y divide-neutral-800">
-                {pkCols.map(col => <ColumnRow key={col.name} col={col} />)}
-                {otherCols.map(col => <ColumnRow key={col.name} col={col} />)}
+                {pkCols.map(col => <ColumnRow key={col.name} col={col} enums={data.enums} />)}
+                {otherCols.map(col => <ColumnRow key={col.name} col={col} enums={data.enums} />)}
             </div>
+
+            {/* Indexes */}
+            {(data.indexes?.length ?? 0) > 0 && (
+                <div className="px-4 py-2.5 border-t border-neutral-800 bg-neutral-800/40">
+                    <div className="space-y-2">
+                        {data.indexes!.map(idx => (
+                            <div
+                                key={idx.name}
+                                className="flex items-start gap-2 min-w-0"
+                                title={`${idx.name} (${idx.columns.join(', ')})`}
+                            >
+                                <span className="w-1.5 h-1.5 mt-1.5 rounded-full bg-violet-500/60 shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                    <span className="text-[10px] font-mono text-neutral-400 block truncate">{idx.name}</span>
+                                    <span className="text-[10px] font-mono text-neutral-600 block truncate">({idx.columns.join(', ')})</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
