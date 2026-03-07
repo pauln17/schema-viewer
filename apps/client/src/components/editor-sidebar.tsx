@@ -4,18 +4,14 @@ import type { Column, Table, Enum, Index } from '@/types/schema';
 interface EditorSidebarProps {
     tables: Table[];
     enums: Enum[];
-    indexes: Index[];
     onTablesChange: (tables: Table[]) => void;
-    onIndexesChange: (indexes: Index[]) => void;
 }
 
 interface TableSectionProps {
     table: Table;
     allTables: Table[];
     enums: Enum[];
-    indexes: Index[];
     onTableChange: (updated: Table) => void;
-    onIndexesChange: (indexes: Index[]) => void;
 }
 
 const SQL_TYPES = ['UUID', 'VARCHAR', 'TEXT', 'INTEGER', 'BIGINT', 'BOOLEAN', 'DATE', 'TIMESTAMP', 'FLOAT', 'DECIMAL', 'JSON'];
@@ -35,8 +31,9 @@ function ConstraintToggle({ label, active, onClick }: { label: string; active: b
     );
 }
 
-function TableSection({ table, allTables, enums, indexes, onTableChange, onIndexesChange }: TableSectionProps) {
+function TableSection({ table, allTables, enums, onTableChange }: TableSectionProps) {
     const [expanded, setExpanded] = useState(false);
+    const [editingDefaultColumn, setEditingDefaultColumn] = useState<string | null>(null);
 
     // Primary Key Columns for Header Badge + Enum Names (always uppercase for display)
     const pkColumns = new Set(table.columns.filter(c => c.primaryKey).map(c => c.name));
@@ -94,27 +91,44 @@ function TableSection({ table, allTables, enums, indexes, onTableChange, onIndex
         updateColumn(colName, { type });
     };
 
-    // Toggling Default Value
     const toggleDefault = (colName: string) => {
         const col = table.columns.find(c => c.name === colName);
-        if (col) updateColumn(colName, { default: col.default !== undefined ? undefined : '' });
+        if (!col) return;
+
+        if (col.default !== undefined || editingDefaultColumn === colName) {
+            // Toggle Default Off (Remove Default Value): If Default is Active
+            setEditingDefaultColumn(null);
+            if (col.default !== undefined) updateColumn(colName, { default: undefined });
+        } else {
+            // Toggle Default On (Show Text Bar) -> If Default Is Not Active
+            setEditingDefaultColumn(colName);
+        }
+    };
+
+    const changeDefault = (colName: string, value: string) => {
+        updateColumn(colName, { default: value });
     };
 
     const fkTargetTables = allTables.filter(t => t.name !== table.name);
-    const tableIndexes = indexes.filter(i => i.table === table.name);
+    const tableIndexes = table.indexes ?? [];
+
+    const indexedColumns = new Set(tableIndexes.flatMap(i => i.columns));
 
     const addIndex = () => {
-        const name = `idx_${table.name}_${tableIndexes.length + 1}`;
-        const firstCol = table.columns[0]?.name ?? 'id';
-        onIndexesChange([...indexes, { table: table.name, columns: [firstCol], name }]);
+        const firstCol = table.columns.find(c => !indexedColumns.has(c.name))?.name ?? table.columns[0]?.name ?? 'id';
+        if (indexedColumns.has(firstCol)) return;
+        const name = `idx_${table.name}_${firstCol}`;
+        const newIndex: Index = { table: table.name, columns: [firstCol], name };
+        onTableChange({ ...table, indexes: [...tableIndexes, newIndex] });
     };
 
     const updateIndex = (idxName: string, patch: Partial<Index>) => {
-        onIndexesChange(indexes.map(i => i.name === idxName ? { ...i, ...patch } : i));
+        const updated = tableIndexes.map(i => i.name === idxName ? { ...i, ...patch } : i);
+        onTableChange({ ...table, indexes: updated });
     };
 
     const removeIndex = (idxName: string) => {
-        onIndexesChange(indexes.filter(i => i.name !== idxName));
+        onTableChange({ ...table, indexes: tableIndexes.filter(i => i.name !== idxName) });
     };
 
     return (
@@ -208,11 +222,44 @@ function TableSection({ table, allTables, enums, indexes, onTableChange, onIndex
                                 </div>
                             </div>
 
-                            {/* Constraints Buttons*/}
-                            <div className="flex items-center gap-1">
-                                <ConstraintToggle label="NN" active={!!col.notNull} onClick={() => toggleConstraint(col.name, 'notNull')} />
-                                <ConstraintToggle label="UQ" active={!!col.unique} onClick={() => toggleConstraint(col.name, 'unique')} />
-                                <ConstraintToggle label="DEFAULT" active={col.default !== undefined} onClick={() => toggleDefault(col.name)} />
+                            {/* Constraints Buttons */}
+                            <div className="flex items-center justify-between gap-1 flex-nowrap w-full min-h-[20px]">
+                                <div className="flex items-center gap-1">
+                                    <ConstraintToggle label="NN" active={!!col.notNull} onClick={() => toggleConstraint(col.name, 'notNull')} />
+                                    <ConstraintToggle label="UQ" active={!!col.unique} onClick={() => toggleConstraint(col.name, 'unique')} />
+                                    <ConstraintToggle label="DEFAULT" active={col.default !== undefined || editingDefaultColumn === col.name} onClick={() => toggleDefault(col.name)} />
+                                </div>
+
+                                {/* Conditionally Rendered Text Bar For Default Value */}
+                                {(col.default !== undefined || editingDefaultColumn === col.name) && (
+                                    <div className="flex items-center gap-3 shrink-0 h-5">
+                                        {editingDefaultColumn === col.name ? (
+                                            <input
+                                                type="text"
+                                                placeholder="value"
+                                                defaultValue={col.default || ''}
+                                                className="w-20 max-w-[100px] h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-emerald-500/50 box-border"
+                                                onBlur={(e) => {
+                                                    const v = e.target.value.trim();
+                                                    changeDefault(col.name, v);
+                                                    setEditingDefaultColumn(null);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                                                }}
+                                                autoFocus
+                                            />
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditingDefaultColumn(col.name)}
+                                                className="text-[10px] font-mono text-emerald-400/90 hover:text-emerald-400 cursor-pointer"
+                                            >
+                                                = {col.default != null && String(col.default).trim() ? String(col.default) : 'value'}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Dropdown Menu for FK Target Table and Column */}
@@ -248,7 +295,8 @@ function TableSection({ table, allTables, enums, indexes, onTableChange, onIndex
                             <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">Indexes</span>
                             <button
                                 onClick={addIndex}
-                                className="cursor-pointer p-1 rounded text-neutral-500 hover:text-violet-400 hover:bg-white/[0.06] transition-colors"
+                                disabled={table.columns.every(c => indexedColumns.has(c.name))}
+                                className="cursor-pointer p-1 rounded text-neutral-500 hover:text-violet-400 hover:bg-white/[0.06] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-neutral-500"
                                 title="Add index"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -256,18 +304,20 @@ function TableSection({ table, allTables, enums, indexes, onTableChange, onIndex
                                 </svg>
                             </button>
                         </div>
-                        {indexes.filter(i => i.table === table.name).length === 0 ? (
+                        {tableIndexes.length === 0 ? (
                             <p className="text-[10px] text-neutral-600 italic py-1">No Indexes</p>
                         ) : (
                             <div className="space-y-1.5">
-                                {indexes.filter(i => i.table === table.name).map(idx => {
+                                {tableIndexes.map(idx => {
                                     const col = idx.columns[0] ?? '';
+                                    const indexedByOthers = new Set(
+                                        tableIndexes.filter(i => i.name !== idx.name).flatMap(i => i.columns)
+                                    );
+                                    const availableColumns = table.columns.filter(
+                                        c => c.name === col || !indexedByOthers.has(c.name)
+                                    );
                                     const handleColumnChange = (newCol: string) => {
-                                        const baseName = `idx_${table.name}_${newCol}`;
-                                        const taken = new Set(tableIndexes.filter(i => i.name !== idx.name).map(i => i.name));
-                                        let name = baseName;
-                                        for (let n = 2; taken.has(name); n++) name = `${baseName}_${n}`;
-                                        updateIndex(idx.name, { columns: [newCol], name });
+                                        updateIndex(idx.name, { columns: [newCol], name: `idx_${table.name}_${newCol}` });
                                     };
                                     return (
                                         <div key={idx.name} className="flex items-center gap-2 group">
@@ -276,7 +326,7 @@ function TableSection({ table, allTables, enums, indexes, onTableChange, onIndex
                                                 onChange={(e) => handleColumnChange(e.target.value)}
                                                 className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-[10px] font-mono text-neutral-400 outline-none focus:border-violet-500/50 cursor-pointer"
                                             >
-                                                {table.columns.map(c => (
+                                                {availableColumns.map(c => (
                                                     <option key={c.name} value={c.name} className="bg-neutral-800">{c.name}</option>
                                                 ))}
                                             </select>
@@ -354,8 +404,7 @@ function EnumSection({ enumDef }: { enumDef: Enum }) {
     );
 }
 
-function EditorSidebar({ tables, enums, indexes, onTablesChange, onIndexesChange }: EditorSidebarProps) {
-
+function EditorSidebar({ tables, enums, onTablesChange }: EditorSidebarProps) {
     const handleTableChange = (updated: Table) => {
         onTablesChange(tables.map(t => t.name === updated.name ? updated : t));
     };
@@ -377,7 +426,7 @@ function EditorSidebar({ tables, enums, indexes, onTablesChange, onIndexesChange
                 <div className="space-y-2">
                     {/* Requires Enums For Type Display */}
                     {tables.map((table) => (
-                        <TableSection key={table.name} table={table} allTables={tables} enums={enums} indexes={indexes} onTableChange={handleTableChange} onIndexesChange={onIndexesChange} />
+                        <TableSection key={table.name} table={table} allTables={tables} enums={enums} onTableChange={handleTableChange} />
                     ))}
                 </div>
 

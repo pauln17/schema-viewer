@@ -13,16 +13,17 @@ export interface Enum {
     values: string[];
 }
 
-export interface Table {
-    name: string;
-    position: { x: number; y: number };
-    columns: Column[];
-}
-
 export interface Index {
     table: string;
     columns: string[];
     name: string;
+}
+
+export interface Table {
+    name: string;
+    position: { x: number; y: number };
+    columns: Column[];
+    indexes: Index[];
 }
 
 export interface Schema {
@@ -31,7 +32,6 @@ export interface Schema {
     definition: {
         tables: Table[];
         enums: Enum[];
-        indexes?: Index[];
     };
     createdAt: Date;
     updatedAt: Date;
