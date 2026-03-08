@@ -1,7 +1,9 @@
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { Nunito } from 'next/font/google';
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { queryPersister } from '@/lib/query-persister';
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -9,14 +11,20 @@ const nunito = Nunito({
   variable: "--font-nunito",
 });
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    },
+  },
+});
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: queryPersister }}>
       <main className={nunito.className}>
         <Component {...pageProps} />
       </main>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

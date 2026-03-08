@@ -20,6 +20,7 @@ import EditorNavbar from '@/components/editor-navbar';
 import TableNode from '@/components/table-node';
 import type { Table, Enum, Schema } from '@/types/schema';
 
+
 function buildNodes(tables: Table[], enums: Enum[]): Node[] {
     return tables.map(t => ({
         id: t.name,
