@@ -79,7 +79,7 @@ export default function Editor() {
                 } return res.json();
             });
         },
-        enabled: !!token && router.isReady && !queryClient.getQueryData(['schemas', token]),
+        enabled: !!token && router.isReady && (typeof window !== 'undefined' && !localStorage.getItem('REACT_QUERY_OFFLINE_CACHE')),
     })
 
     const [activeTab, setActiveTab] = useState('editor');
