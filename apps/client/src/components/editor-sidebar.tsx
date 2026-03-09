@@ -50,29 +50,25 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
         });
     };
 
-    // Toggling PK, FK, Constraints Buttons
+    // Toggling Primary Key
     const togglePk = (colName: string) => {
         const col = tableColumns.find(c => c.name === colName);
         if (col) updateColumn(colName, { primaryKey: !col.primaryKey });
     };
 
+    // Toggle Foreign Key + FK Data Dropdowns
+    const fkTargetTables = allTables.filter(t => t.name !== table.name);
     const toggleFk = (colName: string) => {
         const col = tableColumns.find(c => c.name === colName);
         if (!col) return;
         if (col.references) {
             updateColumn(colName, { references: undefined });
         } else {
-            const targets = allTables.filter(t => t.name !== table.name);
-            if (targets.length === 0) return;
-            const target = targets[0];
+            if (fkTargetTables.length === 0) return;
+            const target = fkTargetTables[0];
             const targetCol = target.columns.find(c => c.primaryKey) ?? target.columns[0];
             updateColumn(colName, { references: { referencedTable: target.name, referencedColumn: targetCol.name } });
         }
-    };
-
-    const toggleConstraint = (colName: string, field: 'notNull' | 'unique') => {
-        const col = tableColumns.find(c => c.name === colName);
-        if (col) updateColumn(colName, { [field]: !col[field] });
     };
 
     const changeFkTable = (colName: string, newTable: string) => {
@@ -88,11 +84,12 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
         updateColumn(colName, { references: { referencedTable: col.references.referencedTable, referencedColumn: newCol } });
     };
 
-    // Changing Column Type
-    const changeType = (colName: string, type: string) => {
-        updateColumn(colName, { type });
+    const toggleConstraint = (colName: string, field: 'notNull' | 'unique') => {
+        const col = tableColumns.find(c => c.name === colName);
+        if (col) updateColumn(colName, { [field]: !col[field] });
     };
 
+    // Toggle Default 
     const toggleDefault = (colName: string) => {
         const col = tableColumns.find(c => c.name === colName);
         if (!col) return;
@@ -107,14 +104,18 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
         }
     };
 
+    // Change Default Value
     const changeDefault = (colName: string, value: string) => {
         updateColumn(colName, { default: value });
     };
 
-    const fkTargetTables = allTables.filter(t => t.name !== table.name);
+    // Changing Column Type
+    const changeType = (colName: string, type: string) => {
+        updateColumn(colName, { type });
+    };
 
+    // Indexes
     const indexedColumns = new Set(tableIndexes.map(i => i.indexedColumn));
-
     const addIndex = () => {
         const firstNonIndexedCol = tableColumns.find(c => !indexedColumns.has(c.name))!.name;
         const name = `idx_${table.name}_${firstNonIndexedCol}`;

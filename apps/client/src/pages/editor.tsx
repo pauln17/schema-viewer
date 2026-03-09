@@ -102,7 +102,16 @@ export default function Editor() {
         setFlowEdges(buildEdges(tables));
     }, [tables, enums]);
 
-    const handleTablesChange = useCallback((updated: Table[]) => setTables(updated), []);
+    const handleTablesChange = useCallback((updated: Table[]) => {
+        setTables(updated)
+        queryClient.setQueryData(['schemas', token], {
+            ...schemas,
+            definition: {
+                enums,
+                tables: updated,
+            }
+        });
+    }, [token, enums]);
 
     // Custom Node Types for React Flow -> React Flow Matches Node Types to Component Names to Generate Nodes
     const nodeTypes = useMemo(() => ({ table: TableNode }), []);
