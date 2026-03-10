@@ -5,6 +5,8 @@ interface EditorSidebarProps {
     tables: Table[];
     enums: Enum[];
     onTablesChange: (tables: Table[]) => void;
+    handleTableNameSubmit: (oldName: string, newName: string) => void;
+    handleColumnNameSubmit: (tableName: string, oldName: string, newName: string) => void;
 }
 
 interface TableSectionProps {
@@ -12,6 +14,8 @@ interface TableSectionProps {
     allTables: Table[];
     enums: Enum[];
     onTableChange: (updated: Table) => void;
+    handleTableNameSubmit: (oldName: string, newName: string) => void;
+    handleColumnNameSubmit: (tableName: string, oldName: string, newName: string) => void;
 }
 
 const SQL_TYPES = ['UUID', 'VARCHAR', 'TEXT', 'INTEGER', 'BIGINT', 'BOOLEAN', 'DATE', 'TIMESTAMP', 'FLOAT', 'DECIMAL', 'JSON'];
@@ -31,9 +35,11 @@ function ConstraintToggle({ label, active, onClick }: { label: string; active: b
     );
 }
 
-function TableSection({ table, allTables, enums, onTableChange }: TableSectionProps) {
+function TableSection({ table, allTables, enums, onTableChange, handleTableNameSubmit, handleColumnNameSubmit }: TableSectionProps) {
     const [expanded, setExpanded] = useState(false);
     const [editingDefaultColumn, setEditingDefaultColumn] = useState<string | null>(null);
+    const [editingTableName, setEditingTableName] = useState(false);
+    const [editingColumnName, setEditingColumnName] = useState<string | null>(null);
 
     const tableColumns = table.columns ?? [];
     const tableIndexes = table.indexes ?? [];
@@ -149,8 +155,34 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                 <svg className="w-4 h-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                <span className={`text-sm truncate transition-colors ${expanded ? 'text-white font-medium' : 'text-neutral-200 group-hover:text-white'}`}>{table.name}</span>
-                <div className="ml-auto flex items-center gap-1.5">
+                <div className="flex-1 min-w-0 flex items-center" onClick={(e) => e.stopPropagation()}>
+                    {editingTableName ? (
+                        <input
+                            type="text"
+                            defaultValue={table.name}
+                            className="min-w-[80px] h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-blue-500/50 box-border text-sm"
+                            onBlur={(e) => {
+                                const newName = e.target.value.trim();
+                                if (newName && newName !== table.name) handleTableNameSubmit(table.name, newName);
+                                setEditingTableName(false);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                                if (e.key === 'Escape') setEditingTableName(false);
+                            }}
+                            autoFocus
+                        />
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => setEditingTableName(true)}
+                            className={`text-left text-sm truncate transition-colors cursor-pointer hover:text-white ${expanded ? 'text-white font-medium' : 'text-neutral-200'}`}
+                        >
+                            {table.name}
+                        </button>
+                    )}
+                </div>
+                <div className="ml-auto flex items-center gap-1.5 shrink-0">
                     {pkColumns.size > 0 && (
                         <span className="text-[10px] font-mono bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded truncate max-w-[140px]">
                             {pkColumns.size === 1
@@ -188,7 +220,31 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                         </svg>
                                     </button>
-                                    <span className="text-xs text-neutral-200 truncate">{col.name}</span>
+                                    {editingColumnName === col.name ? (
+                                        <input
+                                            type="text"
+                                            defaultValue={col.name}
+                                            className="w-20 max-w-[100px] h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-blue-500/50 box-border"
+                                            onBlur={(e) => {
+                                                const newName = e.target.value.trim();
+                                                if (newName && newName !== col.name) handleColumnNameSubmit(table.name, col.name, newName);
+                                                setEditingColumnName(null);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                                                if (e.key === 'Escape') setEditingTableName(false);
+                                            }}
+                                            autoFocus
+                                        />
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => setEditingColumnName(col.name)}
+                                            className="text-xs text-neutral-200 truncate text-left cursor-pointer hover:text-white transition-colors"
+                                        >
+                                            {col.name}
+                                        </button>
+                                    )}
                                 </div>
                                 {/* Dropdown Menu for Data/Enum Type */}
                                 <div className="relative inline-flex items-center shrink-0">
@@ -246,7 +302,8 @@ function TableSection({ table, allTables, enums, onTableChange }: TableSectionPr
                                                     setEditingDefaultColumn(null);
                                                 }}
                                                 onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                                                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                                                    if (e.key === 'Escape') setEditingTableName(false);
                                                 }}
                                                 autoFocus
                                             />
@@ -406,9 +463,14 @@ function EnumSection({ enumDef }: { enumDef: Enum }) {
     );
 }
 
-function EditorSidebar({ tables, enums, onTablesChange }: EditorSidebarProps) {
+function EditorSidebar({ tables, enums, onTablesChange, handleTableNameSubmit, handleColumnNameSubmit }: EditorSidebarProps) {
     const handleTableChange = (updated: Table) => {
         onTablesChange(tables.map(t => t.name === updated.name ? updated : t));
+    };
+
+    const handleCreateTable = (name: string) => {
+        const newTable: Table = { name, position: { x: 0, y: 0 }, columns: [], indexes: [] };
+        onTablesChange([...tables, newTable]);
     };
 
     return (
@@ -416,7 +478,7 @@ function EditorSidebar({ tables, enums, onTablesChange }: EditorSidebarProps) {
             {/* Sidebar Header*/}
             <div className="px-4 pt-4 pb-2 flex items-center justify-between">
                 <h3 className="text-[11px] font-semibold text-neutral-400 uppercase tracking-widest">Tables</h3>
-                <button className="cursor-pointer text-neutral-500 hover:text-blue-400 transition-colors p-1 rounded-md hover:bg-white/[0.06]">
+                <button onClick={() => handleCreateTable('New Table')} className="cursor-pointer text-neutral-500 hover:text-blue-400 transition-colors p-1 rounded-md hover:bg-white/[0.06]">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                     </svg>
@@ -428,7 +490,7 @@ function EditorSidebar({ tables, enums, onTablesChange }: EditorSidebarProps) {
                 <div className="space-y-2">
                     {/* Requires Enums For Type Display */}
                     {tables.map((table) => (
-                        <TableSection key={table.name} table={table} allTables={tables} enums={enums} onTableChange={handleTableChange} />
+                        <TableSection key={table.name} table={table} allTables={tables} enums={enums} onTableChange={handleTableChange} handleTableNameSubmit={handleTableNameSubmit} handleColumnNameSubmit={handleColumnNameSubmit} />
                     ))}
                 </div>
 

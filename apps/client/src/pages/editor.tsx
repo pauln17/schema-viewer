@@ -82,6 +82,10 @@ export default function Editor() {
         enabled: !!token && router.isReady && (typeof window !== 'undefined' && !localStorage.getItem('REACT_QUERY_OFFLINE_CACHE')),
     })
 
+    const updateQueryCache = useCallback((data: Schema) => {
+        queryClient.setQueryData(['schemas', token], data);
+    }, [queryClient, token]);
+
     const [activeTab, setActiveTab] = useState('editor');
     const [tables, setTables] = useState<Table[]>([]);
     const [enums, setEnums] = useState<Enum[]>([]);
@@ -102,16 +106,38 @@ export default function Editor() {
         setFlowEdges(buildEdges(tables));
     }, [tables, enums]);
 
+    const handleTableNameSubmit = useCallback((oldName: string, newName: string) => {
+        setTables(tables.map(t => t.name === oldName ? { ...t, name: newName } : t));
+        updateQueryCache({
+            ...schemas,
+            definition: {
+                enums,
+                tables: tables.map(t => t.name === oldName ? { ...t, name: newName } : t),
+            }
+        } as Schema);
+    }, [enums, schemas, tables, updateQueryCache]);
+
+    const handleColumnNameSubmit = useCallback((tableName: string, oldName: string, newName: string) => {
+        setTables(tables.map(t => t.name === tableName ? { ...t, columns: t.columns.map(c => c.name === oldName ? { ...c, name: newName } : c) } : t));
+        updateQueryCache({
+            ...schemas,
+            definition: {
+                enums,
+                tables: tables.map(t => t.name === tableName ? { ...t, columns: t.columns.map(c => c.name === oldName ? { ...c, name: newName } : c) } : t),
+            }
+        } as Schema);
+    }, [enums, schemas, tables, updateQueryCache]);
+
     const handleTablesChange = useCallback((updated: Table[]) => {
-        setTables(updated)
-        queryClient.setQueryData(['schemas', token], {
+        setTables(updated);
+        updateQueryCache({
             ...schemas,
             definition: {
                 enums,
                 tables: updated,
             }
-        });
-    }, [token, enums]);
+        } as Schema);
+    }, [enums, schemas, updateQueryCache]);
 
     // Custom Node Types for React Flow -> React Flow Matches Node Types to Component Names to Generate Nodes
     const nodeTypes = useMemo(() => ({ table: TableNode }), []);
@@ -128,9 +154,9 @@ export default function Editor() {
                 enums,
                 tables: tables.map(t => t.name === node.id ? { ...t, position: node.position } : t),
             }
-        }
-        queryClient.setQueryData(['schemas', token], tempData);
-    }, [token, tables]);
+        };
+        updateQueryCache(tempData as Schema);
+    }, [enums, schemas, tables, updateQueryCache]);
     // First Few Renders -> Undefined Token ETC. 
 
     const onEdgesChange = useCallback(
@@ -177,7 +203,7 @@ export default function Editor() {
             </div>
         ) : (
             <div className="flex w-screen h-screen overflow-hidden">
-                <EditorSidebar tables={tables} enums={enums} onTablesChange={handleTablesChange} />
+                <EditorSidebar tables={tables} enums={enums} onTablesChange={handleTablesChange} handleTableNameSubmit={handleTableNameSubmit} handleColumnNameSubmit={handleColumnNameSubmit} />
                 <div className="flex flex-col flex-1 overflow-hidden">
                     <EditorNavbar activeTab={activeTab} onTabChange={setActiveTab} />
                     {tabContent[activeTab]}
