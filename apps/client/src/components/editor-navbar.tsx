@@ -3,9 +3,10 @@ interface EditorNavbarProps {
     onTabChange: (tab: string) => void;
     saveSchema: () => void;
     isPending: boolean;
+    isSaved: boolean;
 }
 
-export default function EditorNavbar({ activeTab, onTabChange, saveSchema, isPending }: EditorNavbarProps) {
+export default function EditorNavbar({ activeTab, onTabChange, saveSchema, isPending, isSaved }: EditorNavbarProps) {
     return (
         <div className="flex items-center justify-between px-4 border-b border-white/[0.06] bg-black">
             {/* Left: Tabs */}
@@ -56,18 +57,28 @@ export default function EditorNavbar({ activeTab, onTabChange, saveSchema, isPen
 
                 <div className="w-px h-5 bg-white/[0.1] mx-2" />
 
-                {/* Save */}
+                {/* Save - shows status when saved, action when modified */}
                 <button
-                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 cursor-pointer transition-colors disabled:opacity-80 min-w-[4.5rem]"
-                    title="Save"
-                    onClick={saveSchema}
+                    className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium min-w-[5rem] cursor-pointer transition-colors disabled:opacity-80 ${isSaved && !isPending
+                        ? "text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 cursor-default"
+                        : "text-white bg-blue-600 hover:bg-blue-500"
+                        }`}
+                    title={isSaved ? "All changes saved" : "Save changes"}
+                    onClick={isSaved ? undefined : saveSchema}
                     disabled={isPending}
                 >
                     {isPending ? (
                         <span className="w-3.5 h-3.5 shrink-0 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : isSaved ? (
+                        <>
+                            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Saved
+                        </>
                     ) : (
                         <>
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                             </svg>
                             Save

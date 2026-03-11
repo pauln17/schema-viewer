@@ -103,6 +103,10 @@ export default function Editor() {
       if (!res.ok) throw new Error("Failed to Save Schema");
       return res.json();
     },
+    onSuccess: () => {
+      const cacheData = queryClient.getQueryData<Schema>(["schemas", token]);
+      if (cacheData) setLastSavedData(cacheData);
+    },
   });
 
   const updateQueryCache = useCallback(
@@ -112,6 +116,7 @@ export default function Editor() {
     [queryClient, token],
   );
 
+  const [lastSavedData, setLastSavedData] = useState<Schema | null>(null);
   const [activeTab, setActiveTab] = useState("editor");
   const [tables, setTables] = useState<Table[]>([]);
   const [enums, setEnums] = useState<Enum[]>([]);
@@ -123,10 +128,44 @@ export default function Editor() {
   // Syncs API Data to Local State
   useEffect(() => {
     if (schemas) {
+      setLastSavedData((prev) => (prev ?? schemas));
       setTables(schemas.definition.tables ?? []);
       setEnums(schemas.definition.enums ?? []);
     }
   }, [schemas]);
+
+  const hasUnsavedChanges = useMemo(
+    () =>
+      !!schemas &&
+      !!lastSavedData &&
+      JSON.stringify(schemas.definition) !==
+      JSON.stringify(lastSavedData.definition),
+    [schemas, lastSavedData],
+  );
+
+  // Warn before refresh/close when there are unsaved changes.
+  // When the user chooses "Leave", mark that we should discard cached edits on reload.
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        if (token) localStorage.setItem("DISCARD_CACHE_ON_LOAD", token);
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges, token]);
+
+  // On load: if the user previously chose to leave with unsaved changes, clear the persisted
+  // cache so we fetch fresh data from the server instead of showing the discarded edits.
+  useEffect(() => {
+    if (typeof window === "undefined" || !token || !router.isReady) return;
+    const discardToken = localStorage.getItem("DISCARD_CACHE_ON_LOAD");
+    if (discardToken === token) {
+      localStorage.removeItem("DISCARD_CACHE_ON_LOAD");
+      queryClient.removeQueries({ queryKey: ["schemas", token] });
+    }
+  }, [queryClient, token, router.isReady]);
 
   // Syncs Local State to React Flow
   useEffect(() => {
@@ -355,7 +394,13 @@ export default function Editor() {
         renameEnumOption={renameEnumOption}
       />
       <div className="flex flex-col flex-1 overflow-hidden">
-        <EditorNavbar activeTab={activeTab} onTabChange={setActiveTab} saveSchema={saveSchema} isPending={isPending} />
+        <EditorNavbar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          saveSchema={saveSchema}
+          isPending={isPending}
+          isSaved={!hasUnsavedChanges}
+        />
         {tabContent[activeTab]}
       </div>
     </div>
