@@ -14,7 +14,7 @@ import {
   type Connection,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import EditorSidebar from "@/components/editor-sidebar";
 import EditorNavbar from "@/components/editor-navbar";
 import TableNode from "@/components/table-node";
@@ -61,29 +61,48 @@ export default function Editor() {
   const { data: schemas, isLoading } = useQuery<Schema | null>({
     queryKey: ["schemas", token],
     queryFn: async () => {
-      return fetch("http://localhost:5001/schemas", {
+      const res = await fetch("http://localhost:5001/schemas", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      }).then((res) => {
-        if (!res.ok) {
-          if (res.status === 429) {
-            router.replace(`/editor/limit`);
-            return null;
-          }
-          router.push("/editor");
-          res.json().then((e) => console.error("[GET /schemas]", e));
+      });
+      if (!res.ok) {
+        if (res.status === 429) {
+          router.replace(`/editor/limit`);
           return null;
         }
-        return res.json();
-      });
+        router.push("/editor");
+        const e = await res.json();
+        console.error("[GET /schemas]", e);
+        return null;
+      }
+      return res.json();
     },
     enabled:
       !!token &&
       router.isReady &&
       typeof window !== "undefined" &&
       !localStorage.getItem("REACT_QUERY_OFFLINE_CACHE"),
+  });
+
+  const { mutate: saveSchema, isPending } = useMutation({
+    mutationFn: async () => {
+      if (token === undefined) throw new Error("No Token to Save Schema");
+      const cacheData = queryClient.getQueryData<Schema>(["schemas", token]);
+      if (cacheData === undefined) throw new Error("No Schema Data to Save");
+
+      const res = await fetch("http://localhost:5001/schemas", {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(cacheData),
+      });
+      if (!res.ok) throw new Error("Failed to Save Schema");
+      return res.json();
+    },
   });
 
   const updateQueryCache = useCallback(
@@ -336,7 +355,7 @@ export default function Editor() {
         renameEnumOption={renameEnumOption}
       />
       <div className="flex flex-col flex-1 overflow-hidden">
-        <EditorNavbar activeTab={activeTab} onTabChange={setActiveTab} />
+        <EditorNavbar activeTab={activeTab} onTabChange={setActiveTab} saveSchema={saveSchema} isPending={isPending} />
         {tabContent[activeTab]}
       </div>
     </div>
