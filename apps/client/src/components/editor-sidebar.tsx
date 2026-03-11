@@ -301,6 +301,7 @@ function TableSection({
           {editingTableName ? (
             <input
               type="text"
+              maxLength={15}
               defaultValue={table.name}
               className="min-w-[80px] h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-blue-500/50 box-border text-sm"
               onBlur={(e) => {
@@ -329,13 +330,6 @@ function TableSection({
           )}
         </div>
         <div className="ml-auto flex items-center gap-1.5 shrink-0">
-          {pkColumns.size > 0 && (
-            <span className="text-[10px] font-mono bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded truncate max-w-[140px]">
-              {pkColumns.size === 1
-                ? [...pkColumns][0]
-                : `(${[...pkColumns].join(", ")})`}
-            </span>
-          )}
           <span className="text-[10px] text-neutral-500 font-mono">
             {tableColumns.length}
           </span>
@@ -393,6 +387,7 @@ function TableSection({
                   {editingColumnName === col.name ? (
                     <input
                       type="text"
+                      maxLength={15}
                       defaultValue={col.name}
                       className="w-20 max-w-[100px] h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-blue-500/50 box-border"
                       onBlur={(e) => {
@@ -513,6 +508,7 @@ function TableSection({
                     {editingDefaultColumn === col.name ? (
                       <input
                         type="text"
+                        maxLength={10}
                         placeholder="value"
                         defaultValue={col.default || ""}
                         className="w-20 max-w-[100px] h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-emerald-500/50 box-border"
