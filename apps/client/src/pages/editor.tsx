@@ -24,7 +24,7 @@ function buildNodes(tables: Table[], enums: Enum[]): Node[] {
   return tables.map((t) => ({
     id: t.name,
     type: "table",
-    position: t.position,
+    position: t.position ?? { x: 0, y: 0 },
     data: {
       label: t.name,
       columns: t.columns,
@@ -220,7 +220,9 @@ export default function Editor() {
         e.name === enumName
           ? {
               ...e,
-              values: (e.values ?? []).map((v) => (v === oldName ? trimmed : v)),
+              values: (e.values ?? []).map((v) =>
+                v === oldName ? trimmed : v,
+              ),
             }
           : e,
       );

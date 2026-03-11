@@ -25,6 +25,7 @@ interface TableSectionProps {
   allTables: Table[];
   enums: Enum[];
   onTableChange: (updated: Table) => void;
+  onDeleteTable: (tableName: string) => void;
   handleTableNameSubmit: (oldName: string, newName: string) => void;
   handleColumnNameSubmit: (
     tableName: string,
@@ -36,6 +37,7 @@ interface TableSectionProps {
 interface EnumSectionProps {
   enum: Enum;
   onEnumChange: (updated: Enum) => void;
+  onDeleteEnum: (enumName: string) => void;
   handleEnumNameSubmit: (oldName: string, newName: string) => void;
   handleValueNameSubmit: (
     enumName: string,
@@ -93,11 +95,32 @@ function ConstraintToggle({
   );
 }
 
+function DeleteIcon({ title }: { title?: string }) {
+  return (
+    <svg
+      className="w-3.5 h-3.5 cursor-pointer"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden
+    >
+      {title ? <title>{title}</title> : null}
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h12"
+      />
+    </svg>
+  );
+}
+
 function TableSection({
   table,
   allTables,
   enums,
   onTableChange,
+  onDeleteTable,
   handleTableNameSubmit,
   handleColumnNameSubmit,
 }: TableSectionProps) {
@@ -113,7 +136,7 @@ function TableSection({
   const tableColumns = table.columns ?? [];
   const tableIndexes = table.indexes ?? [];
 
-  // Primary Key Columns for Header Badge + Enum Names (always uppercase for display)
+  // Primary Key Columns + Enum Names (always uppercase for display)
   const pkColumns = new Set(
     tableColumns.filter((c) => c.primaryKey).map((c) => c.name),
   );
@@ -250,6 +273,14 @@ function TableSection({
     });
   };
 
+  const removeColumn = (colName: string) => {
+    onTableChange({
+      ...table,
+      columns: tableColumns.filter((c) => c.name !== colName),
+      indexes: tableIndexes.filter((i) => i.indexedColumn !== colName),
+    });
+  };
+
   return (
     <div
       className={`rounded-lg overflow-hidden border transition-colors ${expanded ? "border-white/[0.1] bg-white/[0.02]" : "border-white/[0.06]"}`}
@@ -329,10 +360,21 @@ function TableSection({
             </button>
           )}
         </div>
-        <div className="ml-auto flex items-center gap-1.5 shrink-0">
+        <div
+          className="ml-auto flex items-center gap-1.5 shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
           <span className="text-[10px] text-neutral-500 font-mono">
             {tableColumns.length}
           </span>
+          <button
+            type="button"
+            onClick={() => onDeleteTable(table.name)}
+            className="p-1 text-neutral-500 hover:text-red-400 transition-colors shrink-0"
+            title="Delete table"
+          >
+            <DeleteIcon />
+          </button>
         </div>
       </div>
 
@@ -476,6 +518,14 @@ function TableSection({
                     />
                   </svg>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => removeColumn(col.name)}
+                  className="p-1 text-neutral-500 hover:text-red-400 transition-colors shrink-0"
+                  title="Delete column"
+                >
+                  <DeleteIcon />
+                </button>
               </div>
 
               {/* Constraints Buttons */}
@@ -709,6 +759,7 @@ function TableSection({
 function EnumSection({
   enum: enumItem,
   onEnumChange,
+  onDeleteEnum,
   handleEnumNameSubmit,
   handleValueNameSubmit,
 }: EnumSectionProps) {
@@ -716,6 +767,13 @@ function EnumSection({
   const [editingEnumName, setEditingEnumName] = useState(false);
   const [editingValue, setEditingValue] = useState<string | null>(null);
   const enumValues = enumItem.values ?? [];
+
+  const removeValue = (value: string) => {
+    onEnumChange({
+      ...enumItem,
+      values: enumValues.filter((v) => v !== value),
+    });
+  };
 
   const addValue = () => {
     const base = "value";
@@ -806,10 +864,21 @@ function EnumSection({
             </button>
           )}
         </div>
-        <div className="ml-auto flex items-center gap-1.5 shrink-0">
+        <div
+          className="ml-auto flex items-center gap-1.5 shrink-0"
+          onClick={(e) => e.stopPropagation()}
+        >
           <span className="text-[10px] text-neutral-500 font-mono">
             {enumValues.length}
           </span>
+          <button
+            type="button"
+            onClick={() => onDeleteEnum(enumItem.name)}
+            className="p-1 text-neutral-500 hover:text-red-400 transition-colors shrink-0"
+            title="Delete enum"
+          >
+            <DeleteIcon />
+          </button>
         </div>
       </div>
 
@@ -822,31 +891,45 @@ function EnumSection({
               className="flex items-center gap-2 px-3 py-1.5 ml-3 border-b border-white/[0.03] last:border-b-0 hover:bg-white/[0.02] transition-colors"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/50 shrink-0" />
-              {editingValue === value ? (
-                <input
-                  type="text"
-                  defaultValue={value}
-                  className="flex-1 min-w-0 h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-emerald-500/50 box-border text-xs"
-                  onBlur={(e) => {
-                    handleValueNameSubmit(enumItem.name, value, e.target.value);
-                    setEditingValue(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter")
-                      (e.target as HTMLInputElement).blur();
-                    if (e.key === "Escape") setEditingValue(null);
-                  }}
-                  autoFocus
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setEditingValue(value)}
-                  className="text-left text-xs text-neutral-300 font-mono truncate cursor-pointer hover:text-white transition-colors"
-                >
-                  {value}
-                </button>
-              )}
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                {editingValue === value ? (
+                  <input
+                    type="text"
+                    defaultValue={value}
+                    className="flex-1 min-w-0 h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-emerald-500/50 box-border text-xs"
+                    onBlur={(e) => {
+                      handleValueNameSubmit(
+                        enumItem.name,
+                        value,
+                        e.target.value,
+                      );
+                      setEditingValue(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter")
+                        (e.target as HTMLInputElement).blur();
+                      if (e.key === "Escape") setEditingValue(null);
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditingValue(value)}
+                    className="text-left text-xs text-neutral-300 font-mono truncate cursor-pointer hover:text-white transition-colors"
+                  >
+                    {value}
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => removeValue(value)}
+                className="p-1 text-neutral-500 hover:text-red-400 transition-colors shrink-0"
+                title="Delete value"
+              >
+                <DeleteIcon />
+              </button>
             </div>
           ))}
 
@@ -909,6 +992,14 @@ function EditorSidebar({
     handleEnumsChange([...enums, { name, values: [] }]);
   };
 
+  const handleDeleteTable = (tableName: string) => {
+    onTablesChange(tables.filter((t) => t.name !== tableName));
+  };
+
+  const handleDeleteEnum = (enumName: string) => {
+    handleEnumsChange(enums.filter((e) => e.name !== enumName));
+  };
+
   return (
     <div className="w-80 shrink-0 border-r border-white/[0.06] bg-black flex flex-col overflow-hidden">
       {/* Sidebar Header*/}
@@ -947,6 +1038,7 @@ function EditorSidebar({
               allTables={tables}
               enums={enums}
               onTableChange={handleTableChange}
+              onDeleteTable={handleDeleteTable}
               handleTableNameSubmit={handleTableNameSubmit}
               handleColumnNameSubmit={handleColumnNameSubmit}
             />
@@ -984,6 +1076,7 @@ function EditorSidebar({
                 key={enumItem.name}
                 enum={enumItem}
                 onEnumChange={handleEnumChange}
+                onDeleteEnum={handleDeleteEnum}
                 handleEnumNameSubmit={handleEnumNameSubmit}
                 handleValueNameSubmit={handleValueNameSubmit}
               />
