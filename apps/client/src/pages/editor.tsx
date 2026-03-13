@@ -77,17 +77,16 @@ export default function Editor() {
         console.error("[GET /schema]", e);
         return null;
       }
-      return res.json();
+      const data = await res.json();
+      setLastSavedData(data);
+      return data;
     },
-    enabled:
-      !!token &&
-      router.isReady &&
-      !queryClient.getQueryData<Schema>(["schema", token]),
+    enabled: !!token && router.isReady
   });
 
   const { mutate: saveSchema, isPending } = useMutation({
     mutationFn: async () => {
-      const cacheData = queryClient.getQueryData<Schema>(["schema", token]);
+      const cacheData = queryClient.getQueryData<Schema>(["schema", token]) ?? { definition: { enums: [], tables: [] } };
       if (token == undefined) {
         const res = await fetch("http://localhost:5001/schemas", {
           method: "POST",
@@ -96,7 +95,7 @@ export default function Editor() {
           },
           body: JSON.stringify({
             name: "Schema",
-            definition: cacheData!.definition as Schema["definition"],
+            definition: cacheData.definition as Schema["definition"],
           }),
         });
         if (!res.ok) throw new Error("Failed to Create Schema");
@@ -134,51 +133,35 @@ export default function Editor() {
   const [activeTab, setActiveTab] = useState("editor");
   const [tables, setTables] = useState<Table[]>([]);
   const [enums, setEnums] = useState<Enum[]>([]);
-  const [flowNodes, setFlowNodes] = useState<Node[]>(() =>
-    buildNodes(tables, enums),
-  );
+  const [flowNodes, setFlowNodes] = useState<Node[]>(() => buildNodes(tables, enums));
   const [flowEdges, setFlowEdges] = useState<Edge[]>(() => buildEdges(tables));
+
+  const hasUnsavedChanges = useMemo(
+    () => {
+      return !!schema && !!lastSavedData && JSON.stringify(schema.definition) !== JSON.stringify(lastSavedData.definition);
+    },
+    [schema, lastSavedData],
+  );
 
   // Syncs API Data to Local State
   useEffect(() => {
     if (schema) {
-      setLastSavedData((prev) => prev ?? schema);
       setTables(schema.definition.tables ?? []);
       setEnums(schema.definition.enums ?? []);
     }
   }, [schema]);
 
-  const hasUnsavedChanges = useMemo(
-    () =>
-      !!schema &&
-      !!lastSavedData &&
-      JSON.stringify(schema.definition) !==
-      JSON.stringify(lastSavedData.definition),
-    [schema, lastSavedData],
-  );
-  // Warn before refresh/close when there are unsaved changes.
-  // When the user chooses "Leave", mark that we should discard cached edits on reload.
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
-        if (token) localStorage.setItem("DISCARD_CACHE_ON_LOAD", token);
         e.preventDefault();
-      }
+      } else if (!token) {
+        localStorage.removeItem("REACT_QUERY_OFFLINE_CACHE");
+      };
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [hasUnsavedChanges, token]);
-
-  // On load: if the user previously chose to leave with unsaved changes, clear the persisted
-  // cache so we fetch fresh data from the server instead of showing the discarded edits.
-  useEffect(() => {
-    if (typeof window === "undefined" || !token || !router.isReady) return;
-    const discardToken = localStorage.getItem("DISCARD_CACHE_ON_LOAD");
-    if (discardToken === token) {
-      localStorage.removeItem("DISCARD_CACHE_ON_LOAD");
-      queryClient.removeQueries({ queryKey: ["schema", token] });
-    }
-  }, [queryClient, token, router.isReady]);
+  }, [hasUnsavedChanges, queryClient, token]);
 
   // Syncs Local State to React Flow
   useEffect(() => {
@@ -244,7 +227,7 @@ export default function Editor() {
       updateQueryCache({
         ...schema,
         definition: {
-          enums,
+          ...schema?.definition,
           tables: updated,
         },
       } as Schema);

@@ -9,7 +9,7 @@ interface EditorNavbarProps {
   token: string;
   activeTab: string;
   onTabChange: (tab: string) => void;
-  saveSchema: (variables?: unknown, options?: { onSuccess?: () => void }) => void;
+  saveSchema: () => void;
   isPending: boolean;
   isSaved: boolean;
 }
@@ -154,17 +154,26 @@ export default function EditorNavbar({
 
         {/* Save */}
         <button
-          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium min-w-[5rem] cursor-pointer transition-colors disabled:opacity-80 ${isSaved && !isPending
+          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium min-w-[5rem] cursor-pointer transition-colors disabled:opacity-80 ${token && isSaved && !isPending
             ? "text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 cursor-default"
             : "text-white bg-blue-600 hover:bg-blue-500"
             }`}
-          title={isSaved ? "All Changes Saved" : "Save Changes"}
-          onClick={isSaved ? undefined : saveSchema}
+          title={token ? (isSaved ? "All Changes Saved" : "Save Changes") : "Save and Get Shareable Link"}
+          onClick={
+            token
+              ? isSaved
+                ? undefined
+                : saveSchema
+              : () => {
+                saveSchema();
+                localStorage.setItem("OPEN_SHARE_AFTER_SAVE", "true");
+              }
+          }
           disabled={isPending}
         >
           {isPending ? (
             <span className="w-3.5 h-3.5 shrink-0 animate-spin rounded-full border-2 border-white border-t-transparent" />
-          ) : isSaved ? (
+          ) : token && isSaved ? (
             <>
               <svg
                 className="w-3.5 h-3.5 shrink-0"
@@ -200,7 +209,6 @@ export default function EditorNavbar({
             </>
           )}
         </button>
-
         {/* Share */}
         <button
           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-neutral-300 border border-white/[0.1] hover:text-white hover:bg-white/[0.06] hover:border-white/[0.2] cursor-pointer transition-colors"
