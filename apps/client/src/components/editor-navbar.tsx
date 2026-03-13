@@ -63,10 +63,14 @@ export default function EditorNavbar({
   };
 
   const handleGenerateLink = () => {
-    if (token) {
-      generateLinkMutation.mutate();
-      return;
+    if (!token) return;
+    if (!isSaved) {
+      const ok = window.confirm(
+        "You have unsaved changes. Generate a new link anyway?"
+      );
+      if (!ok) return;
     }
+    generateLinkMutation.mutate();
   };
 
   useEffect(() => {

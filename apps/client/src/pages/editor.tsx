@@ -101,7 +101,7 @@ export default function Editor() {
         if (!res.ok) throw new Error("Failed to Create Schema");
         return res.json();
       } else {
-        const res = await fetch("http://localhost:5001/schemas", {
+        const res = await fetch("http://localhost:5001/schemas/token", {
           method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
