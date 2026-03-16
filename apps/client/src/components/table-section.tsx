@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Column, Table, Enum, Index } from "@/types/schema";
 
 interface TableSectionProps {
@@ -46,11 +46,25 @@ const CONSTRAINT_STYLES: Record<string, { on: string; off: string }> = {
 
 function TypeDropdown({ value, onChange, enumNames }: TypeDropdownProps) {
   const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const display = enumNames.includes(value.toUpperCase())
     ? value.toUpperCase()
     : value;
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside, true);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside, true);
+  }, [open]);
+
   return (
-    <div className="relative">
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -353,7 +367,7 @@ export function TableSection({
               defaultValue={table.name}
               className="min-w-[80px] h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-blue-500/50 box-border text-sm"
               onBlur={(e) => {
-                const newName = e.target.value.trim();
+                const newName = e.target.value.trim().toLowerCase();
                 if (newName && newName !== table.name)
                   renameTable(table.name, newName);
                 setEditingTableName(false);
@@ -450,7 +464,7 @@ export function TableSection({
                       defaultValue={col.name}
                       className="w-20 max-w-[100px] h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-blue-500/50 box-border"
                       onBlur={(e) => {
-                        const newName = e.target.value.trim();
+                        const newName = e.target.value.trim().toLowerCase();
                         if (newName && newName !== col.name)
                           renameColumn(table.name, col.name, newName);
                         setEditingColumnName(null);
@@ -648,7 +662,7 @@ export function TableSection({
                             name: `idx_${table.name}_${e.target.value}`,
                           })
                         }
-                        className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-[10px] font-mono text-neutral-400 outline-none focus:border-violet-500/50 cursor-pointer"
+                        className="flex-1 min-w-0 bg-white/[0.04] border border-white/[0.06] rounded px-2 py-1 text-[10px] font-mono text-neutral-400 outline-none cursor-pointer"
                       >
                         {availableColumns.map((c) => (
                           <option

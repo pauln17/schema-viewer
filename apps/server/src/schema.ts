@@ -7,7 +7,7 @@ import { requireToken } from "./middleware/requireToken";
 const router = Router();
 
 const columnSchema = z.object({
-  name: z.string(),
+  name: z.string().toLowerCase(),
   type: z.string(),
   primaryKey: z.boolean().optional(),
   unique: z.boolean().optional(),
@@ -24,7 +24,7 @@ const indexSchema = z.object({
 });
 
 const tableSchema = z.object({
-  name: z.string(),
+  name: z.string().toLowerCase(),
   position: z
     .object({
       x: z.coerce.number().default(0),
@@ -36,7 +36,7 @@ const tableSchema = z.object({
 });
 
 const enumSchema = z.object({
-  name: z.string(),
+  name: z.string().toLowerCase(),
   options: z.array(z.string()),
 });
 
