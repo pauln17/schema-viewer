@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Enum } from "@/types/schema";
 
-export interface EnumSectionProps {
+interface EnumSectionProps {
   enum: Enum;
   updateEnum: (updated: Enum) => void;
   deleteEnum: (enumName: string) => void;
