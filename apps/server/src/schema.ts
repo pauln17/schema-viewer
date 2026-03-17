@@ -33,7 +33,7 @@ const tableSchema = z.object({
     .default({ x: 0, y: 0 }),
   columns: z.array(columnSchema).default([]),
   indexes: z.array(indexSchema).default([]),
-  keys: z.array(z.array(z.string())).default([]),
+  keys: z.array(z.string()).default([]),
   checks: z.array(z.string()).default([]),
 });
 
