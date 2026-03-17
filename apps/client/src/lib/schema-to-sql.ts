@@ -10,10 +10,10 @@ const formatDefault = (v: string): string => {
 };
 
 // Schema -> Dialect Specific SQLs
-const schemaToSql = (_schema: Schema, dialect: string): string => {
+const schemaToSql = (schema: Schema, dialect: string): string => {
     switch (dialect) {
         case "postgres":
-            return toPostgresSql(_schema);
+            return toPostgresSql(schema);
         default:
             throw new Error(`Unsupported Dialect: ${dialect}`);
     }
@@ -51,7 +51,8 @@ const toPostgresSql = (schema: Schema): string => {
         return `CREATE TYPE ${e.name} AS ENUM (${enumOptions});`;
     }).join("\n");
 
-    return `${enumsSql}\n\n${tablesSql}\n\n${indexesSql}`;
+    const sql = [enumsSql, tablesSql, indexesSql].filter((s) => s.length > 0);
+    return sql.join("\n\n");
 };
 
 export { schemaToSql };

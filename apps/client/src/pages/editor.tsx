@@ -163,7 +163,12 @@ export default function Editor() {
         });
         router.push(`/editor/${data.token}`);
       }
-      setLastSavedData(data.schema);
+      // PUT Returns Schema Directly; POST Returns { Schema, Token }
+      const saved = data.schema ?? data;
+      if (token) {
+        queryClient.setQueryData(["schema", token], saved);
+        setLastSavedData(saved);
+      }
     },
   });
 
