@@ -1,5 +1,6 @@
-import { memo, useCallback } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import MonacoEditor from "@monaco-editor/react";
+import { schemaToSql } from "@/lib/schema-to-sql";
 import type { Enum, Schema, Table } from "@/types/schema";
 import { EnumSection } from "./enum-section";
 import { TableSection } from "./table-section";
@@ -38,9 +39,6 @@ function SidebarFooter({ tables, enums }: { tables: Table[]; enums: Enum[] }) {
 }
 
 interface EditorSidebarProps {
-  activeSidebarTab: "schema" | "sql";
-  onTabChange: (tab: "schema" | "sql") => void;
-  sqlContent: string;
   schema: Schema | null;
   tables: Table[];
   enums: Enum[];
@@ -48,129 +46,127 @@ interface EditorSidebarProps {
 }
 
 function EditorSidebar({
-  activeSidebarTab,
-  onTabChange,
-  sqlContent,
   schema,
   tables,
   enums,
   updateQueryCache,
 }: EditorSidebarProps) {
-  const updateTables = useCallback(
-    (updated: Table[]) => {
-      if (!schema) return;
-      updateQueryCache({
-        ...schema,
-        definition: { enums, tables: updated },
-      });
-    },
-    [enums, schema, updateQueryCache],
+  const [mounted, setMounted] = useState(false);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<"schema" | "sql">("schema");
+
+  const handleTabChange = (tab: "schema" | "sql") => {
+    setActiveSidebarTab(tab);
+    localStorage.setItem("editor-sidebar-tab", tab);
+  };
+
+  useEffect(() => {
+    const saved = localStorage.getItem("editor-sidebar-tab");
+    if (saved === "sql" || saved === "schema") {
+      setActiveSidebarTab(saved);
+    }
+    setMounted(true);
+  }, []);
+
+  const sqlContent = useMemo(
+    () =>
+      schemaToSql(
+        { name: schema?.name ?? "", definition: { enums, tables } } as Schema,
+        "postgres"
+      ),
+    [enums, schema?.name, tables],
   );
 
-  const deleteTable = useCallback(
-    (tableName: string) => {
-      updateTables(tables.filter((t) => t.name !== tableName));
-    },
-    [tables, updateTables],
-  );
+  const updateTables = (updated: Table[]) => {
+    if (!schema) return;
+    updateQueryCache({
+      ...schema,
+      definition: { enums, tables: updated },
+    });
+  };
 
-  const renameTable = useCallback(
-    (oldName: string, newName: string) => {
-      if (!schema) return;
-      updateQueryCache({
-        ...schema,
-        definition: {
-          enums,
-          tables: tables.map((t) =>
-            t.name === oldName ? { ...t, name: newName } : t,
-          ),
-        },
-      });
-    },
-    [enums, schema, tables, updateQueryCache],
-  );
+  const deleteTable = (tableName: string) => {
+    updateTables(tables.filter((t) => t.name !== tableName));
+  };
 
-  const renameColumn = useCallback(
-    (tableName: string, oldName: string, newName: string) => {
-      if (!schema) return;
-      updateQueryCache({
-        ...schema,
-        definition: {
-          enums,
-          tables: tables.map((t) =>
-            t.name === tableName
-              ? {
-                ...t,
-                columns: t.columns.map((c) =>
-                  c.name === oldName ? { ...c, name: newName } : c,
-                ),
-              }
-              : t,
-          ),
-        },
-      });
-    },
-    [enums, schema, tables, updateQueryCache],
-  );
+  const renameTable = (oldName: string, newName: string) => {
+    if (!schema) return;
+    updateQueryCache({
+      ...schema,
+      definition: {
+        enums,
+        tables: tables.map((t) =>
+          t.name === oldName ? { ...t, name: newName } : t,
+        ),
+      },
+    });
+  };
 
-  const updateEnums = useCallback(
-    (updated: Enum[]) => {
-      if (!schema) return;
-      updateQueryCache({
-        ...schema,
-        definition: { enums: updated, tables },
-      });
-    },
-    [schema, tables, updateQueryCache],
-  );
+  const renameColumn = (tableName: string, oldName: string, newName: string) => {
+    if (!schema) return;
+    updateQueryCache({
+      ...schema,
+      definition: {
+        enums,
+        tables: tables.map((t) =>
+          t.name === tableName
+            ? {
+              ...t,
+              columns: t.columns.map((c) =>
+                c.name === oldName ? { ...c, name: newName } : c,
+              ),
+            }
+            : t,
+        ),
+      },
+    });
+  };
 
-  const deleteEnum = useCallback(
-    (enumName: string) => {
-      updateEnums(enums.filter((e) => e.name !== enumName));
-    },
-    [enums, updateEnums],
-  );
+  const updateEnums = (updated: Enum[]) => {
+    if (!schema) return;
+    updateQueryCache({
+      ...schema,
+      definition: { enums: updated, tables },
+    });
+  };
 
-  const renameEnum = useCallback(
-    (oldName: string, newName: string) => {
-      if (!schema) return;
-      updateQueryCache({
-        ...schema,
-        definition: {
-          enums: enums.map((e) =>
-            e.name === oldName ? { ...e, name: newName } : e,
-          ),
-          tables,
-        },
-      });
-    },
-    [enums, schema, tables, updateQueryCache],
-  );
+  const deleteEnum = (enumName: string) => {
+    updateEnums(enums.filter((e) => e.name !== enumName));
+  };
 
-  const renameEnumOption = useCallback(
-    (enumName: string, oldName: string, newName: string) => {
-      const trimmed = newName.trim();
-      if (!trimmed || trimmed === oldName) return;
-      if (!schema) return;
-      updateQueryCache({
-        ...schema,
-        definition: {
-          enums: enums.map((e) =>
-            e.name === enumName
-              ? {
-                ...e,
-                options: (e.options ?? []).map((v) =>
-                  v === oldName ? trimmed : v,
-                ),
-              }
-              : e,
-          ),
-          tables,
-        },
-      });
-    },
-    [enums, schema, tables, updateQueryCache],
-  );
+  const renameEnum = (oldName: string, newName: string) => {
+    if (!schema) return;
+    updateQueryCache({
+      ...schema,
+      definition: {
+        enums: enums.map((e) =>
+          e.name === oldName ? { ...e, name: newName } : e,
+        ),
+        tables,
+      },
+    });
+  };
+
+  const renameEnumOption = (enumName: string, oldName: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) return;
+    if (!schema) return;
+    updateQueryCache({
+      ...schema,
+      definition: {
+        enums: enums.map((e) =>
+          e.name === enumName
+            ? {
+              ...e,
+              options: (e.options ?? []).map((v) =>
+                v === oldName ? trimmed : v,
+              ),
+            }
+            : e,
+        ),
+        tables,
+      },
+    });
+  };
 
   const createTable = () => {
     const base = "table";
@@ -197,11 +193,13 @@ function EditorSidebar({
     updateEnums([...enums, { name, options: [] }]);
   };
 
+  if (!mounted) return null;
+
   return (
     <div className="w-full min-w-0 h-full bg-[#070707] flex flex-col overflow-hidden">
       <div className="shrink-0 flex w-full h-14 items-stretch">
         <button
-          onClick={() => onTabChange("schema")}
+          onClick={() => handleTabChange("schema")}
           className={`flex-1 min-w-0 px-4 flex items-center justify-center text-[13px] font-medium transition-colors cursor-pointer border-b-2 ${activeSidebarTab === "schema"
             ? "text-white border-blue-500 bg-white/[0.02]"
             : "text-neutral-500 hover:text-neutral-300 border-transparent"
@@ -210,7 +208,7 @@ function EditorSidebar({
           Schema
         </button>
         <button
-          onClick={() => onTabChange("sql")}
+          onClick={() => handleTabChange("sql")}
           className={`flex-1 min-w-0 px-4 flex items-center justify-center text-[13px] font-medium transition-colors cursor-pointer border-b-2 ${activeSidebarTab === "sql"
             ? "text-white border-blue-500 bg-white/[0.02]"
             : "text-neutral-500 hover:text-neutral-300 border-transparent"

@@ -13,11 +13,9 @@ import {
   type NodeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Group, Panel } from "react-resizable-panels";
 import EditorNavbar from "@/components/editor-navbar";
 import EditorSidebar from "@/components/editor-sidebar";
 import TableNode from "@/components/table-node";
-import { schemaToSql } from "@/lib/schema-to-sql";
 import type { Enum, Schema, Table } from "@/types/schema";
 
 function getReferencedColumns(tableName: string, tables: Table[]): string[] {
@@ -95,7 +93,6 @@ export default function Editor() {
   const queryClient = useQueryClient();
 
   const [lastSavedData, setLastSavedData] = useState<Schema | null>(null);
-  const [activeSidebarTab, setActiveSidebarTab] = useState<"schema" | "sql">("schema");
   const [flowNodes, setFlowNodes] = useState<Node[]>([]);
   const [flowEdges, setFlowEdges] = useState<Edge[]>([]);
 
@@ -226,15 +223,6 @@ export default function Editor() {
     [schema, lastSavedData],
   );
 
-  const sqlContent = useMemo(
-    () =>
-      schemaToSql(
-        { name: schema?.name ?? "", definition: { enums, tables } } as Schema,
-        "postgres"
-      ),
-    [enums, schema?.name, tables],
-  );
-
   const isTokenLoading = token && (!router.isReady || isLoading || schema === null);
   return isTokenLoading ? (
     <div className="flex w-screen h-screen items-center justify-center bg-black">
@@ -245,48 +233,41 @@ export default function Editor() {
     </div>
   ) : (
     <div className="flex w-screen h-screen overflow-hidden">
-      <Group orientation="horizontal">
-        <Panel defaultSize="18" minSize="18" maxSize="30">
-          <EditorSidebar
-            activeSidebarTab={activeSidebarTab}
-            onTabChange={setActiveSidebarTab}
-            sqlContent={sqlContent}
-            schema={schema ?? null}
-            tables={tables}
-            enums={enums}
-            updateQueryCache={updateQueryCache}
-          />
-        </Panel>
-        <Panel defaultSize="75" minSize="50">
-          <div className="flex flex-col h-full">
-            <EditorNavbar
-              schema={schema ?? null}
-              token={token ?? ""}
-              saveSchema={() => saveSchema()}
-              isPending={isPending}
-              isSaved={!hasUnsavedChanges}
-              renameSchema={(name) => schema && updateQueryCache({ ...schema, name })}
-            />
-            <div className="flex-1 overflow-hidden">
-              <ReactFlow
-                className="[&_.react-flow__node]:!cursor-default [&_.react-flow__node]:!pointer-events-auto"
-                nodes={flowNodes}
-                edges={flowEdges}
-                nodeTypes={nodeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onNodeDragStop={onNodeDragStop}
-                colorMode="dark"
-                proOptions={{ hideAttribution: true }}
-                fitView
-              >
-                <Background gap={16} size={1} className="!bg-[#0a0a0a]" />
-                <Controls className="!mr-5" position="top-right" />
-              </ReactFlow>
-            </div>
-          </div>
-        </Panel>
-      </Group>
+      <div className="w-120 shrink-0 flex flex-col overflow-hidden">
+        <EditorSidebar
+          schema={schema ?? null}
+          tables={tables}
+          enums={enums}
+          updateQueryCache={updateQueryCache}
+        />
+      </div>
+      <div className=" flex flex-col w-full h-full">
+        <EditorNavbar
+          schema={schema ?? null}
+          token={token ?? ""}
+          saveSchema={() => saveSchema()}
+          isPending={isPending}
+          isSaved={!hasUnsavedChanges}
+          renameSchema={(name) => schema && updateQueryCache({ ...schema, name })}
+        />
+        <div className="flex-1 overflow-hidden">
+          <ReactFlow
+            className="[&_.react-flow__node]:!cursor-default [&_.react-flow__node]:!pointer-events-auto"
+            nodes={flowNodes}
+            edges={flowEdges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeDragStop={onNodeDragStop}
+            colorMode="dark"
+            proOptions={{ hideAttribution: true }}
+            fitView
+          >
+            <Background gap={16} size={1} className="!bg-[#0a0a0a]" />
+            <Controls className="!mr-5" position="top-right" />
+          </ReactFlow>
+        </div>
+      </div>
     </div>
   );
 }
