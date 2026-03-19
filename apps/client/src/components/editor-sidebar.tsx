@@ -1,9 +1,26 @@
-import { memo } from "react";
+import { memo, useRef } from "react";
 import type { Enum, Schema, Table } from "@/types/schema";
 import { EnumSection } from "./enum-section";
 import { TableSection } from "./table-section";
+import { importSql } from "@/lib/schema-to-sql";
 
-function SidebarFooter({ tables, enums }: { tables: Table[]; enums: Enum[] }) {
+interface EditorSidebarProps {
+  schema: Schema;
+  tables: Table[];
+  enums: Enum[];
+  updateQueryCache: (data: Schema) => void;
+  token: string | undefined;
+}
+
+interface SidebarFooterProps {
+  schema: Schema;
+  tables: Table[];
+  enums: Enum[];
+  token: string | undefined;
+}
+
+function SidebarFooter({ schema, tables, enums, token }: SidebarFooterProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const columnCount = tables.reduce((n, t) => n + (t.columns?.length ?? 0), 0);
   return (
     <div className="shrink-0 px-4 py-3 border-t border-white/[0.06] space-y-2">
@@ -16,31 +33,48 @@ function SidebarFooter({ tables, enums }: { tables: Table[]; enums: Enum[] }) {
         <button
           type="button"
           className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/[0.06] text-xs text-neutral-300 hover:bg-white/[0.1] hover:text-white transition-colors cursor-pointer"
-        >
-          <svg className="w-4 h-4 shrink-0" viewBox="0 0 640 640" fill="currentColor">
-            <path d="M352 96c0-17.7-14.3-32-32-32s-32 14.3-32 32v210.7l-41.4-41.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l96 96c12.5 12.5 32.8 12.5 45.3 0l96-96c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L352 306.7zM160 384c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64h320c35.3 0 64-28.7 64-64v-32c0-35.3-28.7-64-64-64h-46.9l-56.6 56.6c-31.2 31.2-81.9 31.2-113.1 0L206.9 384zm304 56c13.3 0 24 10.7 24 24s-10.7 24-24 24s-24-10.7-24-24s10.7-24 24-24" />
-          </svg>
-          Export
-        </button>
-        <button
-          type="button"
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/[0.06] text-xs text-neutral-300 hover:bg-white/[0.1] hover:text-white transition-colors cursor-pointer"
+          onClick={() => {
+            if (token) {
+              const ok = window.confirm("Importing now will overwrite current schema");
+              if (!ok) return;
+            }
+
+            inputRef.current?.click();
+          }}
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 640 640" fill="currentColor">
             <path d="M352 173.3V384c0 17.7-14.3 32-32 32s-32-14.3-32-32V173.3l-41.4 41.4c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3l96-96c12.5 12.5 32.8 12.5 45.3 0l96 96c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0zM320 464c44.2 0 80-35.8 80-80h80c35.3 0 64 28.7 64 64v32c0 35.3-28.7 64-64 64H160c-35.3 0-64-28.7-64-64v-32c0-35.3 28.7-64 64-64h80c0 44.2 35.8 80 80 80m144 24c13.3 0 24-10.7 24-24s-10.7-24-24-24s-24-10.7-24-24s10.7-24 24-24" />
           </svg>
           Import
         </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".sql"
+          hidden
+          onChange={() => {
+            console.log("Export")
+          }}
+        />
+        <button
+          type="button"
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/[0.06] text-xs text-neutral-300 hover:bg-white/[0.1] hover:text-white transition-colors cursor-pointer"
+          onClick={() => {
+            if (tables.length === 0 || enums.length === 0) {
+              window.alert("Empty Database");
+              return;
+            }
+            importSql(schema, "postgres");
+          }}
+        >
+          <svg className="w-4 h-4 shrink-0" viewBox="0 0 640 640" fill="currentColor">
+            <path d="M352 96c0-17.7-14.3-32-32-32s-32 14.3-32 32v210.7l-41.4-41.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l96 96c12.5 12.5 32.8 12.5 45.3 0l96-96c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L352 306.7zM160 384c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64h320c35.3 0 64-28.7 64-64v-32c0-35.3-28.7-64-64-64h-46.9l-56.6 56.6c-31.2 31.2-81.9 31.2-113.1 0L206.9 384zm304 56c13.3 0 24 10.7 24 24s-10.7 24-24 24s-24-10.7-24-24s10.7-24 24-24" />
+          </svg>
+          Export
+        </button>
       </div>
     </div>
   );
-}
-
-interface EditorSidebarProps {
-  schema: Schema | null;
-  tables: Table[];
-  enums: Enum[];
-  updateQueryCache: (data: Schema) => void;
 }
 
 function EditorSidebar({
@@ -48,6 +82,7 @@ function EditorSidebar({
   tables,
   enums,
   updateQueryCache,
+  token,
 }: EditorSidebarProps) {
   const updateTables = (updated: Table[]) => {
     if (!schema) return;
@@ -230,7 +265,7 @@ function EditorSidebar({
           </div>
         </div>
 
-        <SidebarFooter tables={tables} enums={enums} />
+        <SidebarFooter schema={schema} tables={tables} enums={enums} token={token} />
       </div>
     </div>
   );

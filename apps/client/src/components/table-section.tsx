@@ -548,7 +548,7 @@ export function TableSection({
                           onKeyDown={(e) => {
                             if (e.key === "Enter")
                               (e.target as HTMLInputElement).blur();
-                            if (e.key === "Escape") setEditingColumnName(null);
+                            if (e.key === "Escape") setEditingDefaultColumn(null);
                           }}
                           autoFocus
                         />

@@ -231,10 +231,11 @@ export default function Editor() {
       <div className="flex flex-1 min-h-0 min-w-0 flex-col sm:flex-row">
         <div className="w-full sm:w-72 md:w-80 shrink-0 flex flex-col overflow-hidden border-b sm:border-b-0 border-white/[0.06] max-h-[45%] sm:max-h-full">
           <EditorSidebar
-            schema={schema ?? null}
+            schema={schema ?? { name: "Untitled", definition: { tables: [], enums: [] } }}
             tables={tables}
             enums={enums}
             updateQueryCache={updateQueryCache}
+            token={token ?? undefined}
           />
         </div>
         <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
