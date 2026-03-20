@@ -1,9 +1,10 @@
 import { Schema } from "@/types/schema";
 
-/** Normalize identifier for PostgreSQL: lowercase, no spaces, only a-z 0-9 _ - */
+/** Normalize Identifier for PostgreSQL: Lowercase, No Spaces, Only A-Z 0-9 _ - */
 export const normalizeIdentifier = (s: string): string =>
-  s.toLowerCase().replace(/\s/g, "").replace(/[^a-z0-9_-]/g, "");
+    s.toLowerCase().replace(/\s/g, "").replace(/[^a-z0-9_-]/g, "");
 
+// Format Default Expression Values for PostgreSQL
 const SQL_DEFAULT_EXPRS = new Set(["current_timestamp", "current_date", "current_time", "localtimestamp", "localtime"]);
 const formatDefault = (v: string): string => {
     if (/^-?\d+(\.\d+)?$/.test(v)) return `DEFAULT ${v}`;
