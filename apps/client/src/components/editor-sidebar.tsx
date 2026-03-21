@@ -25,9 +25,11 @@ function SidebarFooter({ schema, tables, enums, token }: SidebarFooterProps) {
   return (
     <div className="shrink-0 px-4 py-3 border-t border-white/[0.06] space-y-2">
       <p className="text-[10px] text-neutral-600 text-center">
-        {tables.length} Table{tables.length !== 1 ? "s" : ""}
-        · {enums.length} Enum{enums.length !== 1 ? "s" : ""}
-        {tables.length > 0 && ` · ${columnCount} Columns`}
+        {[
+          `${tables.length} Table${tables.length !== 1 ? "s" : ""}`,
+          `${enums.length} Enum${enums.length !== 1 ? "s" : ""}`,
+          ...(tables.length > 0 ? [`${columnCount} Columns`] : []),
+        ].join(" · ")}
       </p>
       <div className="flex items-center gap-2">
         <button
