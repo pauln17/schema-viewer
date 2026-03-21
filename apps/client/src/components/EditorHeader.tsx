@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import Modal from "@/components/modal";
+import ShareModal from "@/components/ShareModal";
 import { Schema } from "@/types/schema";
 import { useRouter } from "next/router";
 
-interface EditorNavbarProps {
+interface EditorHeaderProps {
   schema: Schema | null;
   token: string;
   saveSchema: () => void;
@@ -12,13 +12,13 @@ interface EditorNavbarProps {
   renameSchema: (name: string) => void;
 }
 
-export default function EditorNavbar({
+export default function EditorHeader({
   schema,
   token,
   saveSchema,
   isPending,
   renameSchema,
-}: EditorNavbarProps) {
+}: EditorHeaderProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -138,7 +138,7 @@ export default function EditorNavbar({
           <span className="hidden sm:inline">Share</span>
         </button>
       </div>
-      <Modal open={isShareOpen} onClose={() => setIsShareOpen(false)}>
+      <ShareModal open={isShareOpen} onClose={() => setIsShareOpen(false)}>
         <div className="space-y-4">
           <div className="space-y-1">
             <h2 className="text-sm font-semibold text-white">Share Schema</h2>
@@ -182,7 +182,7 @@ export default function EditorNavbar({
             </p>
           </div>
         </div>
-      </Modal>
+      </ShareModal>
     </div>
   );
 }

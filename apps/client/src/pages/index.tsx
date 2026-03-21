@@ -1,11 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
-import Navbar from "@/components/navbar";
 
 export default function Root() {
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar />
+      <div className="flex justify-between items-center p-4 text-white border-b-1">
+        <div className="flex items-center gap-16">
+          <div className="flex items-center gap-4">
+            <a href="/"><Image src="/logo.png" alt="Schema" width={45} height={45} /></a>
+            <Link href="/" className="text-2xl">Schema Studio</Link>
+          </div>
+        </div>
+        <a href="https://github.com/pauln17/schema-viewer" target="_blank" rel="noopener noreferrer">
+          <Image src="/github.png" alt="GitHub" width={40} height={40} className="cursor-pointer" />
+        </a>
+      </div>
       <main className="flex flex-1 flex-col items-center justify-center gap-10 px-4 pb-32">
         {/* Hero Section */}
         <div className="flex flex-col items-center gap-3 text-center">
@@ -17,7 +26,6 @@ export default function Root() {
             Create from scratch or parse an existing SQL file.
           </p>
         </div>
-
         {/* Action Cards */}
         <div className="flex flex-wrap justify-center gap-8">
           <Link

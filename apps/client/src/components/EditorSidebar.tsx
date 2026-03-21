@@ -1,7 +1,7 @@
 import { memo, useRef } from "react";
 import type { Enum, Schema, Table } from "@/types/schema";
-import { EnumSection } from "./enum-section";
-import { TableSection } from "./table-section";
+import { EnumSection } from "./EnumSection";
+import { TableSection } from "./TableSection";
 import { importSql } from "@/lib/schema-to-sql";
 
 interface EditorSidebarProps {

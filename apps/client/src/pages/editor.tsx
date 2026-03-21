@@ -13,9 +13,9 @@ import {
 import "@xyflow/react/dist/style.css";
 import { ToastContainer } from "react-toastify";
 import { useRouter } from "next/router";
-import EditorNavbar from "@/components/editor-navbar";
-import EditorSidebar from "@/components/editor-sidebar";
-import TableNode from "@/components/table-node";
+import EditorHeader from "@/components/EditorHeader";
+import EditorSidebar from "@/components/EditorSidebar";
+import TableNode from "@/components/TableNode";
 import type { Enum, Schema, Table } from "@/types/schema";
 
 interface EditorProps {
@@ -152,7 +152,7 @@ export default function Editor({ schema, token, isLoading, saveSchema, isPending
         </div>
       ) : (
         <div className="flex w-screen h-screen overflow-hidden flex-col">
-          <EditorNavbar
+          <EditorHeader
             schema={schema ?? null}
             token={token ?? ""}
             saveSchema={() => saveSchema()}

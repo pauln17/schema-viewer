@@ -1,12 +1,12 @@
 import { useEffect, type ReactNode } from "react";
 
-interface ModalProps {
+interface ShareModalProps {
   open: boolean;
   onClose: () => void;
   children?: ReactNode;
 }
 
-export default function Modal({ open, onClose, children }: ModalProps) {
+export default function ShareModal({ open, onClose, children }: ShareModalProps) {
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (event: KeyboardEvent) => {
