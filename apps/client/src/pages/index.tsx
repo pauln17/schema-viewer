@@ -1,5 +1,5 @@
 import Image from "next/image";
-import ActionCard from "@/components/action-card";
+import Link from "next/link";
 import Navbar from "@/components/navbar";
 
 export default function Root() {
@@ -20,20 +20,32 @@ export default function Root() {
 
         {/* Action Cards */}
         <div className="flex flex-wrap justify-center gap-8">
-          <ActionCard
-            icon="/folder.png"
-            title="Create Schema"
-            description="Start with Empty Canvas"
-            size={100}
+          <Link
             href="/editor"
-          />
-          <ActionCard
-            icon="/upload.png"
-            title="Parse SQL File"
-            description="Upload or Paste SQL"
-            size={85}
+            className="flex flex-col items-center gap-4 rounded-xl border-2 border-neutral-500 px-12 py-10 transition-colors hover:border-neutral-300 cursor-pointer"
+          >
+            <div className="flex h-20 items-center justify-center">
+              <Image src="/folder.png" alt="Create Schema" width={100} height={100} />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Create Schema</h3>
+            <p className="text-sm text-neutral-400">Start with Empty Canvas</p>
+            <span className="mt-2 w-full rounded-lg border border-neutral-400 px-6 py-2.5 text-center text-sm text-white transition-colors hover:border-neutral-200 hover:bg-neutral-800">
+              Create Schema →
+            </span>
+          </Link>
+          <Link
             href="/editor?parse=true"
-          />
+            className="flex flex-col items-center gap-4 rounded-xl border-2 border-neutral-500 px-12 py-10 transition-colors hover:border-neutral-300 cursor-pointer"
+          >
+            <div className="flex h-20 items-center justify-center">
+              <Image src="/upload.png" alt="Parse SQL File" width={85} height={85} />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Parse SQL File</h3>
+            <p className="text-sm text-neutral-400">Upload or Paste SQL</p>
+            <span className="mt-2 w-full rounded-lg border border-neutral-400 px-6 py-2.5 text-center text-sm text-white transition-colors hover:border-neutral-200 hover:bg-neutral-800">
+              Parse SQL File →
+            </span>
+          </Link>
         </div>
       </main>
     </div>
