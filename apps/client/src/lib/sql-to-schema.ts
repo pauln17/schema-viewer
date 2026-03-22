@@ -1,6 +1,5 @@
-import { Schema, Table, Column, References } from "@/types/schema";
+import { Schema, Table, Column, References, Index, Enum } from "@/types/schema";
 import { parse, Statement, type DataTypeDef, toSql } from 'pgsql-ast-parser';
-
 
 const getDataTypeName = (dataType: DataTypeDef): string => {
   if (dataType.kind !== 'array') {
@@ -14,12 +13,21 @@ const sqlToSchema = (sql: string): Schema => {
   const ast: Statement[] = parse(sql);
 
   const tables: Table[] = [];
-  // const indexes: Index[] = [];
-  // const enums: Enum[] = [];
+  const indexes: Index[] = [];
+  const enums: Enum[] = [];
+  console.log(ast);
 
   ast.map((statement) => {
-    if (statement.type === 'create table') {
-      const table: Table = {
+    if (statement.type === 'create enum') {
+      const enumName = statement.name.name;
+      const options = statement.values.map((v) => v.value);
+      const newEnum: Enum = {
+        name: enumName,
+        options: options,
+      }
+      enums.push(newEnum);
+    } else if (statement.type === 'create table') {
+      const newTable: Table = {
         name: statement.name.name,
         columns: [],
         indexes: [],
@@ -71,10 +79,18 @@ const sqlToSchema = (sql: string): Schema => {
           })
         };
         columns.push(column);
+        newTable.keys = primaryKeysByColumn.length > 0 ? primaryKeysByColumn : columns.filter((c) => c.primaryKey).map((c) => c.name);
+        newTable.columns.push(...columns);
+        tables.push(newTable);
       });
-      table.keys = primaryKeysByColumn.length > 0 ? primaryKeysByColumn : columns.filter((c) => c.primaryKey).map((c) => c.name);
-      table.columns.push(...columns);
-      tables.push(table);
+    } else if (statement.type === 'create index') {
+      const idxName = statement.expressions.map((e) => toSql.expr(e.expression).toString()).join('_');
+      const idxColumns = statement.expressions.map((e) => toSql.expr(e.expression).toString());
+      const newIndex: Index = {
+        name: idxName,
+        indexedColumn: idxColumns,
+      }
+      indexes.push(newIndex);
     }
   })
 
@@ -88,6 +104,8 @@ const sqlToSchema = (sql: string): Schema => {
 };
 
 const sqlExample = `
+  CREATE TYPE user_role AS ENUM ('admin', 'user', 'guest');
+
   CREATE TABLE teams (
     org_id INT NOT NULL,
     team_code VARCHAR(50) NOT NULL,
@@ -97,12 +115,21 @@ const sqlExample = `
   CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
+    role user_role DEFAULT 'user',
+    active BOOLEAN NOT NULL DEFAULT true,
+    birth_date DATE,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
     parent_id UUID,
     org_id INT NOT NULL,
     team_code VARCHAR(50) NOT NULL,
     FOREIGN KEY (parent_id) REFERENCES users(id),
-    FOREIGN KEY (org_id, team_code) REFERENCES teams(org_id, team_code)
+    FOREIGN KEY (org_id, team_code) REFERENCES teams(org_id, team_code),
+    CHECK (birth_date IS NULL OR birth_date < now())
   );
+
+  CREATE INDEX idx_users_email ON users (email);
+  CREATE INDEX idx_users_created_at ON users (created_at);
+  CREATE INDEX idx_users_org_team ON users (org_id, team_code);
 `;
 
 
