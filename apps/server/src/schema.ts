@@ -9,10 +9,10 @@ const router = Router();
 const columnSchema = z.object({
   name: z.string().toLowerCase(),
   type: z.string(),
-  primaryKey: z.boolean().optional(),
-  unique: z.boolean().optional(),
-  notNull: z.boolean().optional(),
-  default: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  primaryKey: z.boolean().default(false).optional(),
+  unique: z.boolean().default(false).optional(),
+  notNull: z.boolean().default(false).optional(),
+  default: z.union([z.string(), z.number(), z.boolean()]).default('NULL').optional(),
   references: z
     .object({ referencedTable: z.string(), referencedColumn: z.string() })
     .optional(),
