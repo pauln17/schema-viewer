@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import type { Column, Table, Enum, Index, Reference } from "@/types/schema";
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
 
@@ -14,12 +14,6 @@ interface TableSectionProps {
     oldName: string,
     newName: string,
   ) => void;
-}
-
-interface TypeDropdownProps {
-  value: string;
-  onChange: (t: string) => void;
-  enumNames: string[];
 }
 
 const SQL_TYPE_GROUPS: Record<string, string[]> = {
@@ -44,98 +38,6 @@ const CONSTRAINT_STYLES: Record<string, { on: string; off: string }> = {
     off: "bg-white/[0.04] text-neutral-600 hover:text-emerald-400/60",
   },
 };
-
-function TypeDropdown({ value, onChange, enumNames }: TypeDropdownProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const display = enumNames.includes(value.toUpperCase())
-    ? value.toUpperCase()
-    : value;
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside, true);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside, true);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="relative text-left appearance-none bg-transparent text-[11px] text-neutral-500 font-mono border-none outline-none cursor-pointer hover:text-neutral-300 py-0.5 pr-6 pl-0"
-        style={{ width: `${display.length + 3}ch` }}
-      >
-        {display}
-        <svg
-          className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-600 pointer-events-none"
-          fill="none"
-          viewBox="0 0 12 12"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5l3 3 3-3" />
-        </svg>
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-0.5 z-50 min-w-[8.5rem] max-h-48 overflow-y-auto rounded border border-white/10 bg-neutral-900 py-1 shadow-lg">
-          {Object.entries(SQL_TYPE_GROUPS).map(([label, types]) => (
-            <div key={label}>
-              <div className="px-2.5 py-1 text-[10px] font-semibold text-neutral-500 uppercase">
-                {label}
-              </div>
-              {types.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => {
-                    onChange(t);
-                    setOpen(false);
-                  }}
-                  className={`block w-full text-left px-2.5 py-1 text-[11px] font-mono ${t.toUpperCase() === value.toUpperCase()
-                    ? "bg-blue-600/30 text-blue-300"
-                    : "text-neutral-300 hover:bg-white/5"
-                    } cursor-pointer`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          ))}
-          {enumNames.length > 0 && (
-            <>
-              <div className="px-2.5 py-1 mt-1 border-t border-white/10 text-[10px] font-semibold text-emerald-400/80 uppercase">
-                Enums
-              </div>
-              {enumNames.map((e: string) => (
-                <button
-                  key={e}
-                  type="button"
-                  onClick={() => {
-                    onChange(e);
-                    setOpen(false);
-                  }}
-                  className={`block w-full text-left px-2.5 py-1 text-[11px] font-mono ${e.toUpperCase() === value.toUpperCase()
-                    ? "bg-blue-600/30 text-blue-300"
-                    : "text-neutral-300 hover:bg-white/5"
-                    } cursor-pointer`}
-                >
-                  {e}
-                </button>
-              ))}
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function TableSection({
   table,
@@ -559,11 +461,26 @@ export function TableSection({
                   )}
                 </div>
                 <div className="ml-auto flex items-center gap-1 shrink-0">
-                  <TypeDropdown
+                  <select
                     value={col.type}
-                    onChange={(t: string) => changeType(col.name, t)}
-                    enumNames={enumNames}
-                  />
+                    onChange={(e) => changeType(col.name, e.target.value)}
+                    className="bg-transparent text-[11px] text-neutral-500 font-mono border-none outline-none cursor-pointer hover:text-neutral-300 transition-colors shrink-0 w-[110px] text-right"
+                  >
+                    {Object.entries(SQL_TYPE_GROUPS).map(([label, types]) => (
+                      <optgroup key={label} label={label} className="bg-neutral-800 text-neutral-300">
+                        {types.map((t) => (
+                          <option key={t} value={t} className="bg-neutral-800 text-neutral-300">{t}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                    {enumNames.length > 0 && (
+                      <optgroup label="Enums" className="bg-neutral-800 text-neutral-300">
+                        {enumNames.map((e) => (
+                          <option key={e} value={e} className="bg-neutral-800 text-neutral-300">{e}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
                   <button
                     type="button"
                     onClick={() => deleteColumn(col.name)}
