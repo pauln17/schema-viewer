@@ -31,7 +31,6 @@ const sqlToSchema = (sql: string): Schema => {
   const indexes: Index[] = [];
   const enums: Enum[] = [];
 
-  console.log(ast);
   ast.map((statement) => {
     if (statement.type === 'create schema') {
       schema.name = statement.name.name

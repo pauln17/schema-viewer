@@ -3,6 +3,7 @@ import type { Enum, Schema, Table } from "@/types/schema";
 import { EnumSection } from "./EnumSection";
 import { TableSection } from "./TableSection";
 import { importSql } from "@/lib/schema-to-sql";
+import { sqlToSchema } from "@/lib/sql-to-schema";
 
 interface EditorSidebarProps {
   schema: Schema;
@@ -17,9 +18,10 @@ interface SidebarFooterProps {
   tables: Table[];
   enums: Enum[];
   token: string | undefined;
+  updateQueryCache: (data: Schema) => void;
 }
 
-function SidebarFooter({ schema, tables, enums, token }: SidebarFooterProps) {
+function SidebarFooter({ schema, tables, enums, token, updateQueryCache }: SidebarFooterProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const columnCount = tables.reduce((n, t) => n + (t.columns?.length ?? 0), 0);
   return (
@@ -54,8 +56,16 @@ function SidebarFooter({ schema, tables, enums, token }: SidebarFooterProps) {
           type="file"
           accept=".sql"
           hidden
-          onChange={() => {
-            console.log("Export")
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const text = e.target?.result as string;
+              const importedSchema = sqlToSchema(text);
+              updateQueryCache(importedSchema);
+            };
+            reader.readAsText(file);
           }}
         />
         <button
@@ -290,7 +300,7 @@ function EditorSidebar({
           </div>
         </div>
 
-        <SidebarFooter schema={schema} tables={tables} enums={enums} token={token} />
+        <SidebarFooter schema={schema} tables={tables} enums={enums} token={token} updateQueryCache={updateQueryCache} />
       </div>
     </div>
   );
