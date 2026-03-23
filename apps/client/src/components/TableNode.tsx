@@ -8,6 +8,7 @@ interface TableNodeData {
     indexes: Index[];
     enums: Enum[];
     referencedColumns: string[];
+    localFkColumns: string[];
 }
 
 interface TableNodeProps {
@@ -19,6 +20,7 @@ interface ColumnRowProps {
     col: Column;
     enums: Enum[];
     referencedColumns: string[];
+    localFkColumns: string[];
 }
 
 interface ConstraintBadgeProps {
@@ -34,11 +36,12 @@ function ConstraintBadge({ text, color }: ConstraintBadgeProps) {
     );
 }
 
-function ColumnRow({ tableName, col, enums, referencedColumns }: ColumnRowProps) {
+function ColumnRow({ tableName, col, enums, referencedColumns, localFkColumns }: ColumnRowProps) {
     const displayType = enums.some(e => e.name.toUpperCase() === col.type.toUpperCase()) ? col.type.toUpperCase() : col.type;
     const base = `${tableName}-${col.name}`;
-    const needsSource = !!col.references;
+    const needsSource = localFkColumns.includes(col.name);
     const needsTarget = referencedColumns.includes(col.name);
+    const isFk = localFkColumns.includes(col.name);
     return (
         <div className={`relative flex items-center gap-3 px-4 py-2 hover:bg-white/[0.04] transition-colors ${col.primaryKey ? 'border-l-2 border-l-yellow-400/60 bg-yellow-400/[0.08]' : ''}`}>
             {needsSource && (
@@ -59,7 +62,7 @@ function ColumnRow({ tableName, col, enums, referencedColumns }: ColumnRowProps)
                     <svg className="w-3.5 h-3.5 text-yellow-400 shrink-0" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M0 8a4 4 0 0 1 7.465-2H14a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1h-1v1a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1V9H7.465A4 4 0 0 1 0 8Zm4-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
                     </svg>
-                ) : col.references ? (
+                ) : isFk ? (
                     <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>
@@ -71,7 +74,7 @@ function ColumnRow({ tableName, col, enums, referencedColumns }: ColumnRowProps)
 
             {/* Constraints */}
             <div className="flex items-center gap-1 shrink-0 min-h-[20px]">
-                {col.references && <ConstraintBadge text="FK" color="bg-blue-500/20 text-blue-400" />}
+                {isFk && <ConstraintBadge text="FK" color="bg-blue-500/20 text-blue-400" />}
                 {col.unique && <ConstraintBadge text="UQ" color="bg-cyan-500/20 text-cyan-400" />}
                 {col.notNull && <ConstraintBadge text="NN" color="bg-red-500/20 text-red-400" />}
                 {col.default !== undefined && <ConstraintBadge text="DF" color="bg-emerald-500/20 text-emerald-400" />}
@@ -84,7 +87,7 @@ function ColumnRow({ tableName, col, enums, referencedColumns }: ColumnRowProps)
 }
 
 function TableNode({ data }: TableNodeProps) {
-    const { label, columns, indexes, enums, referencedColumns } = data;
+    const { label, columns, indexes, enums, referencedColumns, localFkColumns } = data;
     const pkCols = columns.filter(c => c.primaryKey);
     const otherCols = columns.filter(c => !c.primaryKey);
 
@@ -102,8 +105,8 @@ function TableNode({ data }: TableNodeProps) {
 
             {/* Columns */}
             <div className="divide-y divide-white/[0.06]">
-                {pkCols.map(col => <ColumnRow key={col.name} tableName={label} col={col} enums={enums} referencedColumns={referencedColumns} />)}
-                {otherCols.map(col => <ColumnRow key={col.name} tableName={label} col={col} enums={enums} referencedColumns={referencedColumns} />)}
+                {pkCols.map(col => <ColumnRow key={col.name} tableName={label} col={col} enums={enums} referencedColumns={referencedColumns} localFkColumns={localFkColumns} />)}
+                {otherCols.map(col => <ColumnRow key={col.name} tableName={label} col={col} enums={enums} referencedColumns={referencedColumns} localFkColumns={localFkColumns} />)}
             </div>
 
             {/* Indexes */}

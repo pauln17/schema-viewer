@@ -27,13 +27,21 @@ interface EditorProps {
   updateQueryCache: (data: Schema) => void;
 }
 
+function getLocalFkColumns(table: Table): string[] {
+  const names: string[] = [];
+  for (const ref of table.references ?? []) {
+    names.push(...ref.localColumns);
+  }
+  return [...new Set(names)];
+}
+
 function getReferencedColumns(tableName: string, tables: Table[]): string[] {
   const names: string[] = [];
   for (const t of tables) {
     if (t.name === tableName) continue;
-    for (const col of t.columns) {
-      if (col.references?.referencedTable === tableName) {
-        names.push(col.references.referencedColumn);
+    for (const ref of t.references ?? []) {
+      if (ref.referencedTable === tableName) {
+        names.push(...ref.referencedColumns);
       }
     }
   }
@@ -51,6 +59,7 @@ function buildNodes(tables: Table[], enums: Enum[]): Node[] {
       indexes: t.indexes ?? [],
       enums,
       referencedColumns: getReferencedColumns(t.name, tables),
+      localFkColumns: getLocalFkColumns(t),
     },
   }));
 }
@@ -62,35 +71,40 @@ function buildEdges(tables: Table[]): Edge[] {
   const tablesByNames = Object.fromEntries(tables.map((t) => [t.name, t]));
   const edges: Edge[] = [];
   for (const table of tables) {
-    for (const col of table.columns) {
-      if (!col.references) continue;
-      const srcTable = table;
-      const tgtTable = tablesByNames[col.references.referencedTable];
-      const tgtCol = col.references.referencedColumn;
+    for (const ref of table.references ?? []) {
+      const tgtTable = tablesByNames[ref.referencedTable];
+      if (!tgtTable) continue;
 
-      const targetHasColumn = tgtTable?.columns?.some((c) => c.name === tgtCol) ?? false;
-      if (!targetHasColumn) continue;
-
-      const srcPos = posByTable[srcTable.name];
+      const srcPos = posByTable[table.name];
       const tgtPos = posByTable[tgtTable.name];
       const targetIsRight = tgtPos.x > srcPos.x;
-      const sourceHandle = targetIsRight
-        ? `${srcTable.name}-${col.name}-source-right`
-        : `${srcTable.name}-${col.name}-source-left`;
-      const targetHandle = targetIsRight
-        ? `${tgtTable.name}-${tgtCol}-target-left`
-        : `${tgtTable.name}-${tgtCol}-target-right`;
 
-      edges.push({
-        id: `${srcTable.name}-${tgtTable.name}-${col.name}`,
-        source: srcTable.name,
-        sourceHandle,
-        target: tgtTable.name,
-        targetHandle,
-        type: "smoothstep",
-        animated: true,
-        style: { stroke: "#FFFFFF" },
-      });
+      for (let i = 0; i < ref.localColumns.length; i++) {
+        const localCol = ref.localColumns[i];
+        const foreignCol = ref.referencedColumns[i];
+        if (!foreignCol) continue;
+
+        const targetHasColumn = tgtTable.columns.some((c) => c.name === foreignCol);
+        if (!targetHasColumn) continue;
+
+        const sourceHandle = targetIsRight
+          ? `${table.name}-${localCol}-source-right`
+          : `${table.name}-${localCol}-source-left`;
+        const targetHandle = targetIsRight
+          ? `${tgtTable.name}-${foreignCol}-target-left`
+          : `${tgtTable.name}-${foreignCol}-target-right`;
+
+        edges.push({
+          id: `${table.name}-${tgtTable.name}-${localCol}-${foreignCol}`,
+          source: table.name,
+          sourceHandle,
+          target: tgtTable.name,
+          targetHandle,
+          type: "smoothstep",
+          animated: true,
+          style: { stroke: "#FFFFFF" },
+        });
+      }
     }
   }
   return edges;

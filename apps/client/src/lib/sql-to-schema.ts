@@ -1,4 +1,4 @@
-import { Schema, Table, Column, References, Index, Enum } from "@/types/schema";
+import { Schema, Table, Column, Index, Enum, Reference } from "@/types/schema";
 import { parse, Statement, type DataTypeDef, toSql } from 'pgsql-ast-parser';
 
 const getDataTypeName = (dataType: DataTypeDef): string => {
@@ -51,8 +51,10 @@ const sqlToSchema = (sql: string): Schema => {
         indexes: [],
         keys: [],
         checks: [],
+        references: [],
       };
       const columns: Column[] = [];
+      const refs: Reference[] = [];
 
       const primaryKeysByColumn: string[] = []
       for (const c of statement.constraints ?? []) {
@@ -60,13 +62,17 @@ const sqlToSchema = (sql: string): Schema => {
         primaryKeysByColumn.push(...c.columns.map((c) => c.name));
       }
 
-      const outlineRefByColumn = new Map<string, References>();
       for (const c of statement.constraints ?? []) {
         if (c.type !== 'foreign key') continue;
-        c.localColumns.forEach((local, i) => {
-          const foreignCol = c.foreignColumns[i]?.name;
-          if (foreignCol) outlineRefByColumn.set(local.name, { referencedTable: c.foreignTable.name, referencedColumn: foreignCol });
-        });
+        const localCols = c.localColumns.map((l) => l.name);
+        const foreignCols = c.foreignColumns.map((f) => f.name);
+        if (localCols.length > 0 && foreignCols.length > 0) {
+          refs.push({
+            localColumns: localCols,
+            referencedTable: c.foreignTable.name,
+            referencedColumns: foreignCols,
+          });
+        }
       }
 
       newTable.checks = (statement.constraints ?? [])
@@ -82,12 +88,16 @@ const sqlToSchema = (sql: string): Schema => {
         const defaultStr = defaultConstraint ? toSql.expr(defaultConstraint.default) : undefined;
 
         const inlineRefConstraint = constraints?.find((c) => c.type === 'reference');
-        const inlineReference = inlineRefConstraint
-          ? { referencedTable: inlineRefConstraint.foreignTable.name, referencedColumn: inlineRefConstraint.foreignColumns[0]?.name }
-          : undefined;
-
-        const ref = outlineRefByColumn.get(astCol.name.name) ?? inlineReference;
-        const references = ref?.referencedTable && ref?.referencedColumn ? ref : undefined;
+        if (inlineRefConstraint) {
+          const foreignCol = inlineRefConstraint.foreignColumns[0]?.name;
+          if (foreignCol) {
+            refs.push({
+              localColumns: [astCol.name.name],
+              referencedTable: inlineRefConstraint.foreignTable.name,
+              referencedColumns: [foreignCol],
+            });
+          }
+        }
 
         const column: Column = {
           name: astCol.name.name,
@@ -97,7 +107,6 @@ const sqlToSchema = (sql: string): Schema => {
             unique: constraints.some((c) => c.type === 'unique') ? true : false,
             notNull: constraints.some((c) => c.type === 'not null') ? true : false,
             ...(defaultStr && { default: defaultStr }),
-            ...(references && { references }),
           })
         };
 
@@ -105,6 +114,7 @@ const sqlToSchema = (sql: string): Schema => {
       });
       newTable.keys = primaryKeysByColumn.length > 0 ? primaryKeysByColumn : columns.filter((c) => c.primaryKey).map((c) => c.name);
       newTable.columns.push(...columns);
+      newTable.references = refs;
       tables.push(newTable);
     } else if (statement.type === 'create index') {
       const idxName = statement.expressions.map((e) => toSql.expr(e.expression).toString()).join('_');

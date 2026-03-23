@@ -26,6 +26,22 @@ const schemaToSql = (schema: Schema, dialect: string): string => {
 
 const toPostgresSql = (schema: Schema): string => {
     const tablesSql: string = (schema.definition?.tables ?? []).map((table) => {
+        const singleFks = new Map<string, { referencedTable: string; referencedColumn: string }>();
+        const compositeFks: string[] = [];
+
+        for (const ref of table.references ?? []) {
+            if (ref.localColumns.length === 1 && ref.referencedColumns.length === 1) {
+                singleFks.set(ref.localColumns[0], {
+                    referencedTable: ref.referencedTable,
+                    referencedColumn: ref.referencedColumns[0],
+                });
+            } else {
+                compositeFks.push(
+                    `FOREIGN KEY (${ref.localColumns.join(", ")}) REFERENCES ${ref.referencedTable}(${ref.referencedColumns.join(", ")})`
+                );
+            }
+        }
+
         const columns = table.columns.map((c) => {
             const column: string[] = [c.name];
             if (c.type) column.push(c.type);
@@ -33,14 +49,17 @@ const toPostgresSql = (schema: Schema): string => {
             if (c.unique) column.push("UNIQUE");
             if (c.notNull) column.push("NOT NULL");
             if (c.default != null) column.push(formatDefault(String(c.default)));
-            if (c.references != null) column.push(`REFERENCES ${c.references.referencedTable}(${c.references.referencedColumn})`);
+            const singleFk = singleFks.get(c.name);
+            if (singleFk) column.push(`REFERENCES ${singleFk.referencedTable}(${singleFk.referencedColumn})`);
             return column.join(" ");
         }).join(",\n");
 
         const primaryKeys = table.keys?.length > 1 ? `\nPRIMARY KEY (${table.keys.join(", ")}),` : '';
         const checks = (table.checks ?? []).map((c) => `CHECK (${c})`).join(",\n");
+        const fks = compositeFks.join(",\n");
 
-        const body = `\n${columns}, ${primaryKeys} ${checks.length > 0 ? `\n${checks}` : ''}\n`.replace(/,\s*\n\s*$/, "\n");
+        const constraints = [primaryKeys, checks, fks].filter((s) => s.length > 0).join("\n");
+        const body = `\n${columns}, ${constraints.length > 0 ? `\n${constraints}` : ''}\n`.replace(/,\s*\n\s*$/, "\n");
         return `CREATE TABLE ${table.name} (${body});`;
     }).join("\n\n");
 

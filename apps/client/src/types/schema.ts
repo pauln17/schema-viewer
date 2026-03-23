@@ -1,6 +1,7 @@
-export interface References {
+export interface Reference {
+  localColumns: string[]
   referencedTable: string;
-  referencedColumn: string;
+  referencedColumns: string[];
 }
 
 export interface TablePosition {
@@ -20,7 +21,6 @@ export interface Column {
   notNull?: boolean;
   unique?: boolean;
   default?: string;
-  references?: References;
 }
 
 export interface Enum {
@@ -40,6 +40,7 @@ export interface Table {
   indexes: Index[];
   keys: string[];
   checks: string[];
+  references: Reference[];
 }
 
 export interface Schema {

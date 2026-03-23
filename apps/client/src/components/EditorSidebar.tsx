@@ -101,26 +101,15 @@ function EditorSidebar({
   const renameTable = (oldName: string, newName: string) => {
     if (!schema) return;
 
-    const primary = tables.filter((t) => t.name === oldName)
-    const other = tables.filter((t) => t.name !== oldName)
-
-    const updatedPrimary = primary.map((t) => t.name === oldName ? {
-      ...t,
-      name: newName
-    } : t)
-
-    const updatedOther = other.map((t) => t.name !== oldName ? {
-      ...t,
-      columns: t.columns.map((c) => c.references?.referencedTable === oldName ? {
-        ...c,
-        references: {
-          ...c.references,
-          referencedTable: newName
-        }
-      } : c)
-    } : t)
-
-    const newTables = [...updatedPrimary, ...updatedOther]
+    const newTables = tables.map((t) => {
+      const renamed = t.name === oldName ? { ...t, name: newName } : t;
+      return {
+        ...renamed,
+        references: (renamed.references ?? []).map((r) =>
+          r.referencedTable === oldName ? { ...r, referencedTable: newName } : r
+        ),
+      };
+    });
 
     updateQueryCache({
       ...schema,
@@ -134,26 +123,27 @@ function EditorSidebar({
   const renameColumn = (tableName: string, oldName: string, newName: string) => {
     if (!schema) return;
 
-    const primary = tables.filter((t) => t.name === tableName)
-    const other = tables.filter((t) => t.name !== tableName)
-
-    const updatedPrimary = primary.map((t) => t.name === tableName ? {
-      ...t,
-      columns: t.columns.map((c) => c.name === oldName ? { ...c, name: newName } : c)
-    } : t)
-
-    const updatedOther = other.map((t) => t.name !== tableName ? {
-      ...t,
-      columns: t.columns.map((c) => c.references?.referencedColumn === oldName && c.references?.referencedTable === tableName ? {
-        ...c,
-        references: {
-          ...c.references,
-          referencedColumn: newName
-        }
-      } : c)
-    } : t)
-
-    const newTables = [...updatedPrimary, ...updatedOther]
+    const newTables = tables.map((t) => {
+      if (t.name === tableName) {
+        return {
+          ...t,
+          columns: t.columns.map((c) => c.name === oldName ? { ...c, name: newName } : c),
+          references: (t.references ?? []).map((r) => ({
+            ...r,
+            localColumns: r.localColumns.map((c) => c === oldName ? newName : c),
+          })),
+        };
+      }
+      return {
+        ...t,
+        references: (t.references ?? []).map((r) =>
+          r.referencedTable !== tableName ? r : {
+            ...r,
+            referencedColumns: r.referencedColumns.map((c) => c === oldName ? newName : c),
+          }
+        ),
+      };
+    });
 
     updateQueryCache({
       ...schema,
@@ -221,7 +211,7 @@ function EditorSidebar({
     }
     updateTables([
       ...tables,
-      { name, position: { x: 0, y: 0 }, columns: [], indexes: [], keys: [], checks: [] },
+      { name, position: { x: 0, y: 0 }, columns: [], indexes: [], keys: [], checks: [], references: [] },
     ]);
   };
 

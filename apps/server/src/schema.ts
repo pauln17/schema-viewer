@@ -13,14 +13,17 @@ const columnSchema = z.object({
   unique: z.boolean().default(false).optional(),
   notNull: z.boolean().default(false).optional(),
   default: z.union([z.string(), z.number(), z.boolean()]).default('NULL').optional(),
-  references: z
-    .object({ referencedTable: z.string(), referencedColumn: z.string() })
-    .optional(),
 });
 
 const indexSchema = z.object({
   name: z.string(),
   indexedColumns: z.array(z.string()).min(1),
+});
+
+const referenceSchema = z.object({
+  localColumns: z.array(z.string()),
+  referencedTable: z.string(),
+  referencedColumns: z.array(z.string()),
 });
 
 const tableSchema = z.object({
@@ -35,6 +38,7 @@ const tableSchema = z.object({
   indexes: z.array(indexSchema).default([]),
   keys: z.array(z.string()).default([]),
   checks: z.array(z.string()).default([]),
+  references: z.array(referenceSchema).default([]),
 });
 
 const enumSchema = z.object({
