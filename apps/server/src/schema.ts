@@ -17,7 +17,7 @@ const columnSchema = z.object({
 
 const indexSchema = z.object({
   name: z.string(),
-  indexedColumns: z.array(z.string()).min(1),
+  indexedColumns: z.array(z.string()),
 });
 
 const referenceSchema = z.object({
@@ -77,7 +77,7 @@ router.get("/", requireToken(), async (req: Request, res: Response) => {
 
 router.post("/", async (req: Request, res: Response) => {
   const schemaObject = z.object({
-    name: z.string().min(1).max(255),
+    name: z.string().max(255),
     definition: definitionSchema,
   });
 
@@ -114,7 +114,7 @@ router.put("/", requireToken(), async (req: Request, res: Response) => {
 
   const schemaObject = z
     .object({
-      name: z.string().min(1).max(255).optional(),
+      name: z.string().max(255).optional(),
       definition: definitionSchema,
     })
     .refine((d) => !(d.name === undefined && d.definition === undefined), {

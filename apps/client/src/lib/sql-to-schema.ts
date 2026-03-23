@@ -33,7 +33,7 @@ const sqlToSchema = (sql: string): Schema => {
 
   ast.map((statement) => {
     if (statement.type === 'create schema') {
-      schema.name = statement.name.name
+      schema.name = statement.name.name ?? 'Untitled'
     }
     if (statement.type === 'create enum') {
       const enumName = statement.name.name;
