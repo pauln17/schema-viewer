@@ -28,10 +28,9 @@ const sqlToSchema = (sql: string): Schema => {
   }
 
   const tables: Table[] = [];
-  const indexes: Index[] = [];
   const enums: Enum[] = [];
 
-  ast.map((statement) => {
+  for (const statement of ast) {
     if (statement.type === 'create schema') {
       schema.name = statement.name.name ?? 'Untitled'
     }
@@ -45,13 +44,14 @@ const sqlToSchema = (sql: string): Schema => {
       enums.push(newEnum);
     } else if (statement.type === 'create table') {
       const newTable: Table = {
-        name: statement.name.name,
+        name: statement.name.name ?? 'Untitled',
         columns: [],
         indexes: [],
         keys: [],
         checks: [],
         references: [],
       };
+
       const columns: Column[] = [];
       const refs: Reference[] = [];
 
@@ -115,19 +115,32 @@ const sqlToSchema = (sql: string): Schema => {
       newTable.columns.push(...columns);
       newTable.references = refs;
       tables.push(newTable);
-    } else if (statement.type === 'create index') {
-      const idxName = statement.expressions.map((e) => toSql.expr(e.expression).toString()).join('_');
+    }
+  }
+
+  for (const statement of ast) {
+    if (statement.type === 'create index') {
       const idxColumns = statement.expressions.map((e) => toSql.expr(e.expression).toString());
+
+      const tableName = statement.table.name;
+      const idxName = statement.indexName?.name ?? idxColumns.join("_");
+
       const newIndex: Index = {
         name: idxName,
         indexedColumns: idxColumns,
-      }
-      indexes.push(newIndex);
-    }
-    schema.definition.tables = tables;
-    schema.definition.enums = enums;
+      };
 
-  });
+      if (tableName && idxColumns.length > 0) {
+        const targetTable = tables.find((t) => t.name === tableName);
+        if (targetTable) {
+          targetTable.indexes.push(newIndex);
+        }
+      }
+    }
+  }
+
+  schema.definition.tables = tables;
+  schema.definition.enums = enums;
 
   return schema;
 };

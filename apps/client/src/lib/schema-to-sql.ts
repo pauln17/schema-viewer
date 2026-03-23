@@ -71,7 +71,7 @@ const toPostgresSql = (schema: Schema): string => {
         .join("\n\n");
 
     const enumsSql: string = (schema.definition?.enums ?? []).map((e) => {
-        const enumOptions = e.options.map((o) => `'${o}'`).join(", ");
+        const enumOptions = (e.options ?? []).map((o) => `'${o}'`).join(", ");
         return `CREATE TYPE ${e.name} AS ENUM (${enumOptions});`;
     }).join("\n");
 

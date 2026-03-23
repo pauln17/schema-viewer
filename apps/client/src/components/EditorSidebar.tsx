@@ -79,8 +79,19 @@ function SidebarFooter({ schema, tables, enums, updateQueryCache }: SidebarFoote
             const reader = new FileReader();
             reader.onload = (e) => {
               const text = e.target?.result as string;
-              const importedSchema = sqlToSchema(text);
-              updateQueryCache(importedSchema);
+              try {
+                const importedSchema = sqlToSchema(text);
+                updateQueryCache(importedSchema);
+              } catch (err) {
+                toast.error("Invalid SQL", {
+                  position: "bottom-center",
+                  autoClose: 3000,
+                  pauseOnHover: false,
+                  closeOnClick: true,
+                  theme: "dark",
+                });
+                console.error(err);
+              }
             };
             reader.readAsText(file);
           }}
@@ -99,7 +110,18 @@ function SidebarFooter({ schema, tables, enums, updateQueryCache }: SidebarFoote
               });
               return;
             }
-            importSql(schema, "postgres");
+            try {
+              importSql(schema, "postgres");
+            } catch (err) {
+              toast.error("Failed to export schema", {
+                position: "bottom-center",
+                autoClose: 3000,
+                pauseOnHover: false,
+                closeOnClick: true,
+                theme: "dark",
+              });
+              console.error(err);
+            }
           }}
         >
           <svg className="w-4 h-4 shrink-0" viewBox="0 0 640 640" fill="currentColor">
