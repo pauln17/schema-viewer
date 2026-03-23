@@ -3,7 +3,7 @@ import type { Enum, Schema, Table } from "@/types/schema";
 import { toast } from "react-toastify";
 import { EnumSection } from "./EnumSection";
 import { TableSection } from "./TableSection";
-import { importSql } from "@/lib/schema-to-sql";
+import { schemaToSql } from "@/lib/schema-to-sql";
 import { sqlToSchema } from "@/lib/sql-to-schema";
 
 interface EditorSidebarProps {
@@ -111,7 +111,14 @@ function SidebarFooter({ schema, tables, enums, updateQueryCache }: SidebarFoote
               return;
             }
             try {
-              importSql(schema, "postgres");
+              const sql = schemaToSql(schema, "postgres");
+              const blob = new Blob([sql], { type: "text/sql" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `${schema.name.toLowerCase().trim().split(/\s+/).join("-")}-postgres.sql`;
+              a.click();
+              URL.revokeObjectURL(url);
             } catch (err) {
               toast.error("Failed to export schema", {
                 position: "bottom-center",

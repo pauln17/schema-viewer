@@ -79,16 +79,4 @@ const toPostgresSql = (schema: Schema): string => {
     return sql.join("\n\n");
 };
 
-const importSql = (schema: Schema, dialect: string): void => {
-    const fileName = `${schema.name.toLowerCase().trim().split(/\s+/).join("-")}-${dialect}.sql`;
-    const sql = schemaToSql(schema, dialect);
-
-    const a = document.createElement("a");
-    a.href = `data:text/sql;charset=utf-8,${encodeURIComponent(sql)}`;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-}
-
-export { schemaToSql, importSql };
+export { schemaToSql };
