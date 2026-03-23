@@ -19,11 +19,23 @@ const formatSqlExpr = (s: string): string =>
 const sqlToSchema = (sql: string): Schema => {
   const ast: Statement[] = parse(sql);
 
+  const schema: Schema = {
+    name: '',
+    definition: {
+      tables: [],
+      enums: [],
+    }
+  }
+
   const tables: Table[] = [];
   const indexes: Index[] = [];
   const enums: Enum[] = [];
 
+  console.log(ast);
   ast.map((statement) => {
+    if (statement.type === 'create schema') {
+      schema.name = statement.name.name
+    }
     if (statement.type === 'create enum') {
       const enumName = statement.name.name;
       const options = statement.values.map((v) => v.value);
@@ -103,45 +115,12 @@ const sqlToSchema = (sql: string): Schema => {
       }
       indexes.push(newIndex);
     }
-  })
+    schema.definition.tables = tables;
+    schema.definition.enums = enums;
 
-  return {
-    name: "Example Schema",
-    definition: {
-      tables: [],
-      enums: [],
-    },
-  };
+  });
+
+  return schema;
 };
 
-const sqlExample = `
-  CREATE TYPE user_role AS ENUM ('admin', 'user', 'guest');
-
-  CREATE TABLE teams (
-    org_id INT NOT NULL,
-    team_code VARCHAR(50) NOT NULL,
-    PRIMARY KEY (org_id, team_code)
-  );
-
-  CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    role user_role DEFAULT 'user',
-    active BOOLEAN NOT NULL DEFAULT true,
-    birth_date DATE,
-    created_at TIMESTAMP NOT NULL DEFAULT now(),
-    parent_id UUID,
-    org_id INT NOT NULL,
-    team_code VARCHAR(50) NOT NULL,
-    FOREIGN KEY (parent_id) REFERENCES users(id),
-    FOREIGN KEY (org_id, team_code) REFERENCES teams(org_id, team_code),
-    CHECK (birth_date IS NULL OR birth_date < now())
-  );
-
-  CREATE INDEX idx_users_email ON users (email);
-  CREATE INDEX idx_users_created_at ON users (created_at);
-  CREATE INDEX idx_users_org_team ON users (org_id, team_code);
-`;
-
-
-export { sqlToSchema, sqlExample }
+export { sqlToSchema }

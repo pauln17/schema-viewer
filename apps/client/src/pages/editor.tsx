@@ -17,7 +17,6 @@ import EditorHeader from "@/components/EditorHeader";
 import EditorSidebar from "@/components/EditorSidebar";
 import TableNode from "@/components/TableNode";
 import type { Enum, Schema, Table } from "@/types/schema";
-import { sqlExample, sqlToSchema } from "@/lib/sql-to-schema";
 
 interface EditorProps {
   schema: Schema | null;
@@ -139,8 +138,6 @@ export default function Editor({ schema, token, isLoading, saveSchema, isPending
     setFlowNodes(buildNodes(tables, enums));
     setFlowEdges(buildEdges(tables));
   }, [schema]);
-
-  sqlToSchema(sqlExample);
 
   const isTokenLoading = token && (!!router.isReady && (isLoading || schema === null));
   return (
