@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+
 import { prisma } from "./prisma";
 
 const TOKEN_BYTES = 32;

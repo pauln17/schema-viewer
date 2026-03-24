@@ -1,24 +1,26 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/router";
+import "@xyflow/react/dist/style.css";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   applyEdgeChanges,
   applyNodeChanges,
   Background,
   Controls,
-  ReactFlow,
   type Edge,
   type EdgeChange,
   type Node,
   type NodeChange,
+  ReactFlow,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast, ToastContainer } from "react-toastify";
 import { io } from "socket.io-client";
-import { ToastContainer, toast } from "react-toastify";
+
 import EditorHeader from "@/components/EditorHeader";
 import EditorSidebar from "@/components/EditorSidebar";
 import TableNode from "@/components/TableNode";
 import type { Enum, Schema, Table } from "@/types/schema";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 function getLocalFkColumns(table: Table): string[] {
   const names: string[] = [];

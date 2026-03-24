@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { Table, Column, Index } from "@/types/schema";
+
+import type { Column, Index,Table } from "@/types/schema";
 
 interface IndexListProps {
   table: Table;

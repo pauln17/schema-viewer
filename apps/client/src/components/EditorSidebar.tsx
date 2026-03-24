@@ -1,10 +1,12 @@
 import { memo, useRef } from "react";
-import type { Enum, Schema, Table } from "@/types/schema";
 import { toast } from "react-toastify";
-import { EnumSection } from "./EnumSection";
-import { TableSection } from "./TableSection";
+
 import { schemaToSql } from "@/lib/schema-to-sql";
 import { sqlToSchema } from "@/lib/sql-to-schema";
+import type { Enum, Schema, Table } from "@/types/schema";
+
+import { EnumSection } from "./EnumSection";
+import { TableSection } from "./TableSection";
 
 interface EditorSidebarProps {
   schema: Schema;

@@ -1,5 +1,6 @@
-import { Schema, Table, Column, Index, Enum, Reference } from "@/types/schema";
-import { parse, Statement, type DataTypeDef, toSql } from 'pgsql-ast-parser';
+import { type DataTypeDef, parse, Statement, toSql } from 'pgsql-ast-parser';
+
+import { Column, Enum, Index, Reference,Schema, Table } from "@/types/schema";
 
 const getDataTypeName = (dataType: DataTypeDef): string => {
   if (dataType.kind !== 'array') {

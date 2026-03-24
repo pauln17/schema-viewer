@@ -1,10 +1,12 @@
 import { useState } from "react";
-import type { Column, Table, Enum } from "@/types/schema";
+
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
+import type { Column, Enum,Table } from "@/types/schema";
+
+import { CheckList } from "./CheckList";
 import { ColumnRow } from "./ColumnRow";
 import { IndexList } from "./IndexList";
 import { ReferenceList } from "./ReferenceList";
-import { CheckList } from "./CheckList";
 
 interface TableSectionProps {
   table: Table;

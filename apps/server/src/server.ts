@@ -1,8 +1,11 @@
 import "dotenv/config";
-import express, { Request, Response } from "express";
+
 import { createServer } from "node:http";
-import { Server } from "socket.io";
+
 import cors from "cors";
+import express, { Request, Response } from "express";
+import { Server } from "socket.io";
+
 import { rateLimiter } from "./middleware/rateLimiter";
 import schemaRouter from "./schema";
 

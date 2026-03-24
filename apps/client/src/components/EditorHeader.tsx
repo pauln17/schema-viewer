@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/router";
+import { useEffect,useState } from "react";
+
 import ShareModal from "@/components/ShareModal";
 import { Schema } from "@/types/schema";
-import { useRouter } from "next/router";
 
 interface EditorHeaderProps {
   schema: Schema | null;

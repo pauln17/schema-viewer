@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { Enum } from "@/types/schema";
+
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
+import type { Enum } from "@/types/schema";
 
 interface EnumSectionProps {
   enum: Enum;

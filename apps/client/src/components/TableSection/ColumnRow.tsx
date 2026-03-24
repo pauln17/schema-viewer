@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { Column } from "@/types/schema";
+
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
+import type { Column } from "@/types/schema";
 
 interface ColumnRowProps {
   col: Column;

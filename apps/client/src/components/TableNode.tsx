@@ -1,6 +1,7 @@
-import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import type { Column, Index, Enum } from '@/types/schema';
+import { memo } from 'react';
+
+import type { Column, Enum,Index } from '@/types/schema';
 
 interface TableNodeData {
     label: string;
