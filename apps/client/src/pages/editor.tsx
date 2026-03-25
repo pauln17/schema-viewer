@@ -2,109 +2,20 @@ import "@xyflow/react/dist/style.css";
 
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  applyEdgeChanges,
-  applyNodeChanges,
   Background,
   Controls,
-  type Edge,
-  type EdgeChange,
-  type Node,
-  type NodeChange,
   ReactFlow,
 } from "@xyflow/react";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback } from "react";
 import { ToastContainer } from "react-toastify";
 import { io } from "socket.io-client";
 
 import EditorHeader from "@/components/EditorHeader";
 import EditorSidebar from "@/components/EditorSidebar";
-import TableNode from "@/components/TableNode";
+import { useEditorFlow } from "@/hooks/useEditorFlow";
 import { useQuerySchema } from "@/hooks/useQuerySchema";
-import type { Enum, Schema, Table } from "@/types/schema";
-
-function getLocalFkColumns(table: Table): string[] {
-  const names: string[] = [];
-  for (const ref of table.references ?? []) {
-    names.push(...ref.localColumns);
-  }
-  return [...new Set(names)];
-}
-
-function getReferencedColumns(tableName: string, tables: Table[]): string[] {
-  const names: string[] = [];
-  for (const t of tables) {
-    if (t.name === tableName) continue;
-    for (const ref of t.references ?? []) {
-      if (ref.referencedTable === tableName) {
-        names.push(...ref.referencedColumns);
-      }
-    }
-  }
-  return [...new Set(names)];
-}
-
-function buildNodes(tables: Table[], enums: Enum[]): Node[] {
-  return tables.map((t) => ({
-    id: t.name,
-    type: "table",
-    position: t.position ?? { x: 0, y: 0 },
-    data: {
-      label: t.name,
-      columns: t.columns ?? [],
-      indexes: t.indexes ?? [],
-      enums,
-      referencedColumns: getReferencedColumns(t.name, tables),
-      localFkColumns: getLocalFkColumns(t),
-    },
-  }));
-}
-
-function buildEdges(tables: Table[]): Edge[] {
-  const posByTable = Object.fromEntries(
-    tables.map((t) => [t.name, t.position ?? { x: 0, y: 0 }])
-  );
-  const tablesByNames = Object.fromEntries(tables.map((t) => [t.name, t]));
-  const edges: Edge[] = [];
-  for (const table of tables) {
-    for (const ref of table.references ?? []) {
-      const tgtTable = tablesByNames[ref.referencedTable];
-      if (!tgtTable) continue;
-
-      const srcPos = posByTable[table.name];
-      const tgtPos = posByTable[tgtTable.name];
-      const targetIsRight = tgtPos.x > srcPos.x;
-
-      for (let i = 0; i < ref.localColumns.length; i++) {
-        const localCol = ref.localColumns[i];
-        const foreignCol = ref.referencedColumns[i];
-        if (!foreignCol) continue;
-
-        const targetHasColumn = tgtTable.columns.some((c) => c.name === foreignCol);
-        if (!targetHasColumn) continue;
-
-        const sourceHandle = targetIsRight
-          ? `${table.name}-${localCol}-source-right`
-          : `${table.name}-${localCol}-source-left`;
-        const targetHandle = targetIsRight
-          ? `${tgtTable.name}-${foreignCol}-target-left`
-          : `${tgtTable.name}-${foreignCol}-target-right`;
-
-        edges.push({
-          id: `${table.name}-${tgtTable.name}-${localCol}-${foreignCol}`,
-          source: table.name,
-          sourceHandle,
-          target: tgtTable.name,
-          targetHandle,
-          type: "smoothstep",
-          animated: true,
-          style: { stroke: "#FFFFFF" },
-        });
-      }
-    }
-  }
-  return edges;
-}
+import type { Schema } from "@/types/schema";
 
 export default function Editor() {
   const router = useRouter();
@@ -125,43 +36,12 @@ export default function Editor() {
 
   const tables = schema?.definition?.tables ?? [];
   const enums = schema?.definition?.enums ?? [];
-  const [flowNodes, setFlowNodes] = useState<Node[]>([]);
-  const [flowEdges, setFlowEdges] = useState<Edge[]>([]);
 
-  const nodeTypes = useMemo(() => ({ table: TableNode }), []);
-
-  const onNodesChange = useCallback(
-    (changes: NodeChange[]) =>
-      setFlowNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
-    [],
-  );
-
-  const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) =>
-      setFlowEdges((edgesSnapshot) => applyEdgeChanges(changes, edgesSnapshot)),
-    [],
-  );
-
-  const onNodeDragStop = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      if (!schema) return;
-      updateQueryCache({
-        ...schema,
-        definition: {
-          enums,
-          tables: tables.map((t) =>
-            t.name === node.id ? { ...t, position: node.position } : t,
-          ),
-        },
-      });
-    },
-    [enums, schema, tables, updateQueryCache],
-  );
-
-  useEffect(() => {
-    setFlowNodes(buildNodes(tables, enums));
-    setFlowEdges(buildEdges(tables));
-  }, [schema]);
+  const { flowNodes, flowEdges, nodeTypes, onNodesChange, onEdgesChange, onNodeDragStop } =
+    useEditorFlow({
+      schema,
+      updateQueryCache,
+    });
 
   const isTokenLoading = token && (!!router.isReady && (isFetching));
   return (
