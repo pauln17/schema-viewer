@@ -1,63 +1,73 @@
 import { useState } from "react";
 
+import { useSchemaActions } from "@/hooks/useSchemaActions";
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
-import type { Column } from "@/types/schema";
+import type { Column, Schema } from "@/types/schema";
+
+const SQL_TYPE_GROUPS: Record<string, string[]> = {
+  Integers: ["INT", "BIGINT", "SMALLINT", "SERIAL", "BIGSERIAL"],
+  Text: ["VARCHAR", "TEXT", "CHAR"],
+  Numeric: ["DECIMAL", "REAL", "FLOAT"],
+  Time: ["DATE", "TIME", "TIMESTAMP", "TIMESTAMPTZ"],
+  Other: ["BOOLEAN", "UUID", "JSON", "BYTEA", "INET", "CIDR"],
+};
+
+const CONSTRAINT_STYLES: Record<string, { on: string; off: string }> = {
+  NN: {
+    on: "bg-red-500/20 text-red-400",
+    off: "bg-white/[0.04] text-neutral-600 hover:text-red-400/60",
+  },
+  UQ: {
+    on: "bg-cyan-500/20 text-cyan-400",
+    off: "bg-white/[0.04] text-neutral-600 hover:text-cyan-400/60",
+  },
+  DEFAULT: {
+    on: "bg-emerald-500/20 text-emerald-400",
+    off: "bg-white/[0.04] text-neutral-600 hover:text-emerald-400/60",
+  },
+};
 
 type ColumnRowProps = {
   col: Column;
+  tableName: string;
+  schema: Schema;
+  token: string | undefined;
   pkColumns: Set<string>;
   fkLocalColumns: Set<string>;
   enumNames: string[];
-  sqlTypeGroups: Record<string, string[]>;
-  constraintStyles: Record<string, { on: string; off: string }>;
-  togglePk: (colName: string) => void;
-  updateColumn: (colName: string, patch: Partial<Column>) => void;
-  deleteColumn: (colName: string) => void;
-  renameColumn: (oldName: string, newName: string) => void;
 };
 
 export function ColumnRow({
   col,
+  tableName,
+  schema,
+  token,
   pkColumns,
   fkLocalColumns,
   enumNames,
-  sqlTypeGroups,
-  constraintStyles,
-  togglePk,
-  updateColumn,
-  deleteColumn,
-  renameColumn,
 }: ColumnRowProps) {
+  const { updateColumn, deleteColumn, renameColumn } =
+    useSchemaActions(schema, token);
+
   const [editingColumnName, setEditingColumnName] = useState(false);
   const [editingDefaultValue, setEditingDefaultValue] = useState(false);
-
-  const toggleConstraint = (field: "notNull" | "unique") => {
-    updateColumn(col.name, { [field]: !col[field] });
-  };
 
   const toggleDefault = () => {
     if (col.default !== undefined || editingDefaultValue) {
       setEditingDefaultValue(false);
-      if (col.default !== undefined) updateColumn(col.name, { default: undefined });
+      if (col.default !== undefined)
+        updateColumn(tableName, col.name, { default: undefined });
     } else {
       setEditingDefaultValue(true);
     }
   };
 
-  const changeDefault = (value: string) => {
-    updateColumn(col.name, { default: value });
-  };
-
-  const changeType = (type: string) => {
-    updateColumn(col.name, { type });
-  };
-
   return (
-    <div className="px-3 py-2.5 ml-3 border-b border-white/[0.03] last:border-b-0 hover:bg-white/[0.02] transition-colors space-y-2">
+    <div className="px-3 py-2.5 border-b border-white/[0.03] last:border-b-0 hover:bg-white/[0.02] transition-colors space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <button
-            onClick={() => togglePk(col.name)}
+            onClick={() => updateColumn(tableName, col.name, { primaryKey: !col.primaryKey })}
             className={`cursor-pointer shrink-0 transition-colors ${pkColumns.has(col.name) ? "text-amber-400" : "text-neutral-700 hover:text-amber-400/60"}`}
             title={pkColumns.has(col.name) ? "Remove From Primary Key" : "Add To Primary Key"}
           >
@@ -80,7 +90,8 @@ export function ColumnRow({
               className="w-20 max-w-[100px] h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-blue-500/50 box-border"
               onBlur={(e) => {
                 const newName = normalizeIdentifier(e.target.value);
-                if (newName && newName !== col.name) renameColumn(col.name, newName);
+                if (newName && newName !== col.name)
+                  renameColumn(tableName, col.name, newName);
                 setEditingColumnName(false);
               }}
               onKeyDown={(e) => {
@@ -102,10 +113,12 @@ export function ColumnRow({
         <div className="ml-auto flex items-center gap-1 shrink-0">
           <select
             value={col.type}
-            onChange={(e) => changeType(e.target.value)}
+            onChange={(e) =>
+              updateColumn(tableName, col.name, { type: e.target.value })
+            }
             className="bg-transparent text-[11px] text-neutral-500 font-mono border-none outline-none cursor-pointer hover:text-neutral-300 transition-colors shrink-0 w-[110px] text-right"
           >
-            {Object.entries(sqlTypeGroups).map(([label, types]) => (
+            {Object.entries(SQL_TYPE_GROUPS).map(([label, types]) => (
               <optgroup key={label} label={label} className="bg-neutral-800 text-neutral-300">
                 {types.map((t) => (
                   <option key={t} value={t} className="bg-neutral-800 text-neutral-300">{t}</option>
@@ -122,7 +135,7 @@ export function ColumnRow({
           </select>
           <button
             type="button"
-            onClick={() => deleteColumn(col.name)}
+            onClick={() => deleteColumn(tableName, col.name)}
             className="p-1 text-neutral-500 hover:text-red-400 transition-colors shrink-0 cursor-pointer"
             title="Delete Column"
           >
@@ -134,20 +147,24 @@ export function ColumnRow({
       <div className="flex items-center justify-between gap-1 flex-nowrap w-full min-h-[20px]">
         <div className="flex items-center gap-1">
           <button
-            onClick={() => toggleConstraint("notNull")}
-            className={`cursor-pointer px-2 py-0.5 rounded text-center text-[10px] font-semibold transition-colors whitespace-nowrap ${!!col.notNull ? constraintStyles.NN.on : constraintStyles.NN.off}`}
+            onClick={() =>
+              updateColumn(tableName, col.name, { notNull: !col.notNull })
+            }
+            className={`cursor-pointer px-2 py-0.5 rounded text-center text-[10px] font-semibold transition-colors whitespace-nowrap ${!!col.notNull ? CONSTRAINT_STYLES.NN.on : CONSTRAINT_STYLES.NN.off}`}
           >
             NN
           </button>
           <button
-            onClick={() => toggleConstraint("unique")}
-            className={`cursor-pointer px-2 py-0.5 rounded text-center text-[10px] font-semibold transition-colors whitespace-nowrap ${!!col.unique ? constraintStyles.UQ.on : constraintStyles.UQ.off}`}
+            onClick={() =>
+              updateColumn(tableName, col.name, { unique: !col.unique })
+            }
+            className={`cursor-pointer px-2 py-0.5 rounded text-center text-[10px] font-semibold transition-colors whitespace-nowrap ${!!col.unique ? CONSTRAINT_STYLES.UQ.on : CONSTRAINT_STYLES.UQ.off}`}
           >
             UQ
           </button>
           <button
             onClick={toggleDefault}
-            className={`cursor-pointer px-2 py-0.5 rounded text-center text-[10px] font-semibold transition-colors whitespace-nowrap ${col.default !== undefined || editingDefaultValue ? constraintStyles.DEFAULT.on : constraintStyles.DEFAULT.off}`}
+            className={`cursor-pointer px-2 py-0.5 rounded text-center text-[10px] font-semibold transition-colors whitespace-nowrap ${col.default !== undefined || editingDefaultValue ? CONSTRAINT_STYLES.DEFAULT.on : CONSTRAINT_STYLES.DEFAULT.off}`}
           >
             DEFAULT
           </button>
@@ -164,7 +181,7 @@ export function ColumnRow({
                 className="w-20 max-w-[100px] h-5 px-1.5 text-[10px] font-mono leading-none bg-white/[0.06] border border-white/[0.08] rounded text-neutral-300 placeholder-neutral-600 outline-none focus:border-emerald-500/50 box-border"
                 onBlur={(e) => {
                   const v = e.target.value.trim();
-                  changeDefault(v);
+                  updateColumn(tableName, col.name, { default: v });
                   setEditingDefaultValue(false);
                 }}
                 onKeyDown={(e) => {

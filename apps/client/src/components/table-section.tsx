@@ -1,130 +1,32 @@
 import { useState } from "react";
 
+import { useSchemaActions } from "@/hooks/useSchemaActions";
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
-import type { Column, Enum, Table } from "@/types/schema";
+import type { Schema, Table } from "@/types/schema";
 
 import { CheckList } from "./check-list";
 import { ColumnRow } from "./column-row";
 import { IndexList } from "./index-list";
 import { ReferenceList } from "./reference-list";
 
-type TableSectionProps = {
-  table: Table;
-  allTables: Table[];
-  enums: Enum[];
-  updateTables: (tables: Table[]) => void;
-  deleteTable: (tableName: string) => void;
-  renameTable: (oldName: string, newName: string) => void;
-  renameColumn: (tableName: string, oldName: string, newName: string) => void;
-};
-
-const SQL_TYPE_GROUPS: Record<string, string[]> = {
-  Integers: ["INT", "BIGINT", "SMALLINT", "SERIAL", "BIGSERIAL"],
-  Text: ["VARCHAR", "TEXT", "CHAR"],
-  Numeric: ["DECIMAL", "REAL", "FLOAT"],
-  Time: ["DATE", "TIME", "TIMESTAMP", "TIMESTAMPTZ"],
-  Other: ["BOOLEAN", "UUID", "JSON", "BYTEA", "INET", "CIDR"],
-};
-
-const CONSTRAINT_STYLES: Record<string, { on: string; off: string }> = {
-  NN: {
-    on: "bg-red-500/20 text-red-400",
-    off: "bg-white/[0.04] text-neutral-600 hover:text-red-400/60",
-  },
-  UQ: {
-    on: "bg-cyan-500/20 text-cyan-400",
-    off: "bg-white/[0.04] text-neutral-600 hover:text-cyan-400/60",
-  },
-  DEFAULT: {
-    on: "bg-emerald-500/20 text-emerald-400",
-    off: "bg-white/[0.04] text-neutral-600 hover:text-emerald-400/60",
-  },
-};
-
-export function TableSection({
-  table,
-  allTables,
-  enums,
-  updateTables,
-  deleteTable,
-  renameTable,
-  renameColumn,
-}: TableSectionProps) {
+export function TableSection({ table, schema, token }: { table: Table; schema: Schema; token: string | undefined }) {
+  const { addColumn, deleteTable, renameTable } = useSchemaActions(schema, token);
   const [expanded, setExpanded] = useState(false);
   const [editingTableName, setEditingTableName] = useState(false);
 
   const tableColumns = table.columns ?? [];
-  const tableIndexes = table.indexes ?? [];
-  const tableChecks = table.checks ?? [];
   const tableRefs = table.references ?? [];
-  const enumNames = enums.map((e) => e.name.toUpperCase());
+  const enumNames = schema.definition.enums.map((e) => e.name.toUpperCase());
 
   const pkColumns = new Set(
     tableColumns.filter((c) => c.primaryKey).map((c) => c.name),
   );
   const fkLocalColumns = new Set(tableRefs.flatMap((r) => r.localColumns));
-  const fkTargetTables = allTables.filter((t) => t.name !== table.name);
-
-  const updateTable = (updated: Table) =>
-    updateTables(allTables.map((t) => (t.name === table.name ? updated : t)));
-
-  const updateColumn = (colName: string, patch: Partial<Column>) => {
-    updateTable({
-      ...table,
-      columns: tableColumns.map((c) =>
-        c.name === colName ? { ...c, ...patch } : c,
-      ),
-    });
-  };
-
-  const deleteColumn = (colName: string) => {
-    const updatedIndexes = tableIndexes
-      .map((i) => ({
-        ...i,
-        indexedColumns: (i.indexedColumns ?? []).filter((c) => c !== colName),
-      }))
-      .filter((i) => i.indexedColumns.length > 0);
-
-    const updatedRefs = tableRefs
-      .map((r) => ({
-        ...r,
-        localColumns: r.localColumns.filter((c) => c !== colName),
-        referencedColumns: r.referencedColumns.filter((_, i) => r.localColumns[i] !== colName),
-      }))
-      .filter((r) => r.localColumns.length > 0);
-
-    updateTable({
-      ...table,
-      columns: tableColumns.filter((c) => c.name !== colName),
-      indexes: updatedIndexes,
-      references: updatedRefs,
-    });
-  };
-
-  const togglePk = (colName: string) => {
-    const col = tableColumns.find((c) => c.name === colName);
-    if (col) updateColumn(colName, { primaryKey: !col.primaryKey });
-  };
-
-  const addColumn = () => {
-    const base = "column";
-    let name = base;
-    let n = 0;
-    while (tableColumns.some((c) => c.name === name)) {
-      n += 1;
-      name = `${base}_${n}`;
-    }
-    updateTable({
-      ...table,
-      columns: [...tableColumns, { name, type: "TEXT" }],
-    });
-  };
 
   return (
     <div
       className={`rounded-lg overflow-hidden border transition-colors ${expanded ? "border-white/[0.1] bg-white/[0.02]" : "border-white/[0.06]"}`}
     >
-      {/* Table Header */}
       <div
         role="button"
         tabIndex={0}
@@ -223,44 +125,23 @@ export function TableSection({
             <ColumnRow
               key={col.name}
               col={col}
+              tableName={table.name}
+              schema={schema}
+              token={token}
               pkColumns={pkColumns}
               fkLocalColumns={fkLocalColumns}
               enumNames={enumNames}
-              sqlTypeGroups={SQL_TYPE_GROUPS}
-              constraintStyles={CONSTRAINT_STYLES}
-              togglePk={togglePk}
-              updateColumn={updateColumn}
-              deleteColumn={deleteColumn}
-              renameColumn={(oldName, newName) =>
-                renameColumn(table.name, oldName, newName)
-              }
             />
           ))}
 
-          <IndexList
-            table={table}
-            tableColumns={tableColumns}
-            tableIndexes={tableIndexes}
-            updateTable={updateTable}
-          />
+          <IndexList table={table} schema={schema} token={token} />
 
-          <ReferenceList
-            table={table}
-            tableColumns={tableColumns}
-            allTables={allTables}
-            fkTargetTables={fkTargetTables}
-            tableRefs={tableRefs}
-            updateTable={updateTable}
-          />
+          <ReferenceList table={table} schema={schema} token={token} />
 
-          <CheckList
-            table={table}
-            tableChecks={tableChecks}
-            updateTable={updateTable}
-          />
+          <CheckList table={table} schema={schema} token={token} />
 
           <button
-            onClick={addColumn}
+            onClick={() => addColumn(table.name)}
             className="cursor-pointer w-full flex items-center justify-center gap-1.5 px-3 py-2 text-neutral-500 hover:text-blue-400 hover:bg-white/[0.04] transition-colors"
           >
             <svg

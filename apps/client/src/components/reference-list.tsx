@@ -1,106 +1,30 @@
-import type { Column, Reference, Table } from "@/types/schema";
+import { useSchemaActions } from "@/hooks/useSchemaActions";
+import type { Schema, Table } from "@/types/schema";
 
-type ReferenceListProps = {
-  table: Table;
-  tableColumns: Column[];
-  allTables: Table[];
-  fkTargetTables: Table[];
-  tableRefs: Reference[];
-  updateTable: (updated: Table) => void;
-};
+export function ReferenceList({ table, schema, token }: { table: Table; schema: Schema; token: string | undefined }) {
+  const {
+    addReference,
+    deleteReference,
+    changeRefTable,
+    changeRefLocalCol,
+    changeRefForeignCol,
+    addRefPair,
+    removeRefPair,
+  } = useSchemaActions(schema, token);
 
-export function ReferenceList({
-  table,
-  tableColumns,
-  allTables,
-  fkTargetTables,
-  tableRefs,
-  updateTable,
-}: ReferenceListProps) {
-  const addReference = () => {
-    if (fkTargetTables.length === 0 || tableColumns.length === 0) return;
-    const target = fkTargetTables[0];
-    const targetCol = target.columns.find((c) => c.primaryKey) ?? target.columns[0];
-    const localCol = tableColumns[0];
-    const newRef: Reference = {
-      localColumns: [localCol.name],
-      referencedTable: target.name,
-      referencedColumns: [targetCol.name],
-    };
-    updateTable({ ...table, references: [...tableRefs, newRef] });
-  };
-
-  const deleteReference = (refIdx: number) => {
-    updateTable({ ...table, references: tableRefs.filter((_, i) => i !== refIdx) });
-  };
-
-  const updateReference = (refIdx: number, patch: Partial<Reference>) => {
-    updateTable({
-      ...table,
-      references: tableRefs.map((r, i) => (i === refIdx ? { ...r, ...patch } : r)),
-    });
-  };
-
-  const changeRefTable = (refIdx: number, newTableName: string) => {
-    const target = allTables.find((t) => t.name === newTableName);
-    if (!target) return;
-    const targetCol = target.columns.find((c) => c.primaryKey) ?? target.columns[0];
-    const ref = tableRefs[refIdx];
-    updateReference(refIdx, {
-      referencedTable: newTableName,
-      referencedColumns: ref.localColumns.map(() => targetCol.name),
-    });
-  };
-
-  const changeRefLocalCol = (refIdx: number, pairIdx: number, newCol: string) => {
-    const ref = tableRefs[refIdx];
-    const updated = [...ref.localColumns];
-    updated[pairIdx] = newCol;
-    updateReference(refIdx, { localColumns: updated });
-  };
-
-  const changeRefForeignCol = (refIdx: number, pairIdx: number, newCol: string) => {
-    const ref = tableRefs[refIdx];
-    const updated = [...ref.referencedColumns];
-    updated[pairIdx] = newCol;
-    updateReference(refIdx, { referencedColumns: updated });
-  };
-
-  const addRefPair = (refIdx: number) => {
-    const ref = tableRefs[refIdx];
-    const target = allTables.find((t) => t.name === ref.referencedTable);
-    if (!target) return;
-    const usedLocal = new Set(ref.localColumns);
-    const usedForeign = new Set(ref.referencedColumns);
-    const nextLocal = tableColumns.find((c) => !usedLocal.has(c.name))?.name;
-    const nextForeign = target.columns.find((c) => !usedForeign.has(c.name))?.name;
-    if (!nextLocal || !nextForeign) return;
-    updateReference(refIdx, {
-      localColumns: [...ref.localColumns, nextLocal],
-      referencedColumns: [...ref.referencedColumns, nextForeign],
-    });
-  };
-
-  const removeRefPair = (refIdx: number, pairIdx: number) => {
-    const ref = tableRefs[refIdx];
-    if (ref.localColumns.length <= 1) {
-      deleteReference(refIdx);
-      return;
-    }
-    updateReference(refIdx, {
-      localColumns: ref.localColumns.filter((_, i) => i !== pairIdx),
-      referencedColumns: ref.referencedColumns.filter((_, i) => i !== pairIdx),
-    });
-  };
+  const allTables = schema.definition.tables;
+  const tableColumns = table.columns ?? [];
+  const tableRefs = table.references ?? [];
+  const fkTargetTables = allTables.filter((t) => t.name !== table.name);
 
   return (
-    <div className="px-3 pt-1.5 pb-1.5 ml-3 border-t border-white/[0.06] space-y-1.5">
+    <div className="px-3 pt-1.5 pb-1.5 border-t border-white/[0.06] space-y-1.5">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
           References
         </span>
         <button
-          onClick={addReference}
+          onClick={() => addReference(table.name)}
           disabled={fkTargetTables.length === 0 || tableColumns.length === 0}
           className="cursor-pointer p-1 rounded text-neutral-500 hover:text-blue-400 hover:bg-white/[0.06] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-neutral-500"
           title="Add Foreign Key"
@@ -133,7 +57,7 @@ export function ReferenceList({
                   <span className="text-[10px] text-blue-400/70">&rarr;</span>
                   <select
                     value={ref.referencedTable}
-                    onChange={(e) => changeRefTable(refIdx, e.target.value)}
+                    onChange={(e) => changeRefTable(table.name, refIdx, e.target.value)}
                     className="bg-transparent text-[10px] text-neutral-400 font-mono border-none outline-none cursor-pointer hover:text-neutral-300 transition-colors"
                   >
                     {fkTargetTables.map((t) => (
@@ -144,7 +68,7 @@ export function ReferenceList({
                     <span className="text-[9px] text-blue-400/50 font-semibold uppercase">composite</span>
                   )}
                   <button
-                    onClick={() => deleteReference(refIdx)}
+                    onClick={() => deleteReference(table.name, refIdx)}
                     className="ml-auto p-0.5 text-neutral-600 hover:text-red-400 transition-colors cursor-pointer shrink-0"
                     title="Remove reference"
                   >
@@ -158,7 +82,7 @@ export function ReferenceList({
                     <div key={pairIdx} className="flex items-center gap-1.5 pl-4">
                       <select
                         value={localCol}
-                        onChange={(e) => changeRefLocalCol(refIdx, pairIdx, e.target.value)}
+                        onChange={(e) => changeRefLocalCol(table.name, refIdx, pairIdx, e.target.value)}
                         className="bg-transparent text-[10px] text-neutral-500 font-mono border-none outline-none cursor-pointer hover:text-neutral-300 transition-colors"
                       >
                         {tableColumns.filter((c) => c.name === localCol || !otherLocalCols.has(c.name)).map((c) => (
@@ -168,7 +92,7 @@ export function ReferenceList({
                       <span className="text-blue-400/50 text-[10px]">&rarr;</span>
                       <select
                         value={ref.referencedColumns[pairIdx] ?? ""}
-                        onChange={(e) => changeRefForeignCol(refIdx, pairIdx, e.target.value)}
+                        onChange={(e) => changeRefForeignCol(table.name, refIdx, pairIdx, e.target.value)}
                         className="bg-transparent text-[10px] text-neutral-400 font-mono border-none outline-none cursor-pointer hover:text-neutral-300 transition-colors"
                       >
                         {targetCols.filter((c) => c.name === ref.referencedColumns[pairIdx] || !otherForeignCols.has(c.name)).map((c) => (
@@ -177,7 +101,7 @@ export function ReferenceList({
                       </select>
                       {isComposite && (
                         <button
-                          onClick={() => removeRefPair(refIdx, pairIdx)}
+                          onClick={() => removeRefPair(table.name, refIdx, pairIdx)}
                           className="p-0.5 text-neutral-600 hover:text-red-400 transition-colors cursor-pointer"
                           title="Remove column pair"
                         >
@@ -189,7 +113,7 @@ export function ReferenceList({
                 })}
                 {canAddPair && (
                   <button
-                    onClick={() => addRefPair(refIdx)}
+                    onClick={() => addRefPair(table.name, refIdx)}
                     className="flex items-center gap-1 pl-4 text-[10px] text-neutral-600 hover:text-blue-400 transition-colors cursor-pointer"
                   >
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

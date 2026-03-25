@@ -1,6 +1,5 @@
 import "@xyflow/react/dist/style.css";
 
-import { useQueryClient } from "@tanstack/react-query";
 import {
   Background,
   Controls,
@@ -17,7 +16,6 @@ import { useQuerySchema } from "@/hooks/useQuerySchema";
 export default function Editor() {
   const router = useRouter();
   const token = router.query.token as string | undefined;
-  const queryClient = useQueryClient();
 
   const { data, isFetching } = useQuerySchema(token);
   const schema = data ?? { name: "", definition: { tables: [], enums: [] } };
@@ -44,16 +42,11 @@ export default function Editor() {
           <EditorHeader
             schema={schema}
             token={token}
-            renameSchema={(name) =>
-              queryClient.setQueryData(["schema", token], { ...schema, name })
-            }
           />
           <div className="flex flex-1 min-h-0 min-w-0 flex-col sm:flex-row">
             <div className="w-full sm:w-72 md:w-80 shrink-0 flex flex-col overflow-hidden border-b sm:border-b-0 border-white/[0.06] max-h-[45%] sm:max-h-full">
               <EditorSidebar
                 schema={schema}
-                tables={schema.definition.tables}
-                enums={schema.definition.enums}
                 token={token}
               />
             </div>

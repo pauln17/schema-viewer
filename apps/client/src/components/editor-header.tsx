@@ -3,20 +3,12 @@ import { useEffect, useState } from "react";
 import ShareModal from "@/components/share-modal";
 import { useCreateSchema } from "@/hooks/useCreateSchema";
 import { useNewToken } from "@/hooks/useNewToken";
+import { useSchemaActions } from "@/hooks/useSchemaActions";
 import { useUpdateSchema } from "@/hooks/useUpdateSchema";
-import { Schema } from "@/types/schema";
+import type { Schema } from "@/types/schema";
 
-type EditorHeaderProps = {
-  schema: Schema;
-  token: string | undefined;
-  renameSchema: (name: string) => void;
-};
-
-export default function EditorHeader({
-  schema,
-  token,
-  renameSchema,
-}: EditorHeaderProps) {
+export default function EditorHeader({ schema, token }: { schema: Schema; token: string | undefined }) {
+  const { renameSchema } = useSchemaActions(schema, token);
   const { updateSchema, isUpdating } = useUpdateSchema(token);
   const { createSchema, isCreating } = useCreateSchema(token);
   const [isShareOpen, setIsShareOpen] = useState(false);

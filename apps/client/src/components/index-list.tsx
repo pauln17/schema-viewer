@@ -1,70 +1,28 @@
 import { useState } from "react";
 
-import type { Column, Index, Table } from "@/types/schema";
+import { useSchemaActions } from "@/hooks/useSchemaActions";
+import type { Schema, Table } from "@/types/schema";
 
-type IndexListProps = {
-  table: Table;
-  tableColumns: Column[];
-  tableIndexes: Index[];
-  updateTable: (updated: Table) => void;
-};
+export function IndexList({ table, schema, token }: { table: Table; schema: Schema; token: string | undefined }) {
+  const { addIndex, deleteIndex, addIndexColumn, removeIndexColumn } = useSchemaActions(schema, token);
 
-export function IndexList({ table, tableColumns, tableIndexes, updateTable }: IndexListProps) {
   const [expandedIndex, setExpandedIndex] = useState<string | null>(null);
 
-  const autoIndexName = (cols: string[]) =>
-    cols.length > 0
-      ? `${table.name}_${cols.join("_")}_idx`
-      : `${table.name}_untitled_idx`;
-
-  const addIndex = () => {
-    const name = `${table.name}_untitled_idx`;
-    const newIndex: Index = { indexedColumns: [], name };
-    updateTable({ ...table, indexes: [...tableIndexes, newIndex] });
-    setExpandedIndex(name);
-  };
-
-  const updateIndex = (idxName: string, patch: Partial<Index>) => {
-    updateTable({
-      ...table,
-      indexes: tableIndexes.map((i) => (i.name === idxName ? { ...i, ...patch } : i)),
-    });
-  };
-
-  const deleteIndex = (idxName: string) => {
-    if (expandedIndex === idxName) setExpandedIndex(null);
-    updateTable({
-      ...table,
-      indexes: tableIndexes.filter((i) => i.name !== idxName),
-    });
-  };
-
-  const addIndexColumn = (idxName: string, colName: string) => {
-    const idx = tableIndexes.find((i) => i.name === idxName);
-    if (!idx) return;
-    const cols = [...(idx.indexedColumns ?? []), colName];
-    const newName = autoIndexName(cols);
-    updateIndex(idxName, { indexedColumns: cols, name: newName });
-    setExpandedIndex(newName);
-  };
-
-  const removeIndexColumn = (idxName: string, colName: string) => {
-    const idx = tableIndexes.find((i) => i.name === idxName);
-    if (!idx) return;
-    const cols = (idx.indexedColumns ?? []).filter((c) => c !== colName);
-    const newName = autoIndexName(cols);
-    updateIndex(idxName, { indexedColumns: cols, name: newName });
-    setExpandedIndex(newName);
-  };
+  const tableColumns = table.columns ?? [];
+  const tableIndexes = table.indexes ?? [];
 
   return (
-    <div className="px-3 pt-1.5 pb-1.5 ml-3 border-t border-white/[0.06] space-y-1.5">
+    <div className="px-3 pt-1.5 pb-1.5 border-t border-white/[0.06] space-y-1.5">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
           Indexes
         </span>
         <button
-          onClick={addIndex}
+          onClick={() => {
+            const name = addIndex(table.name);
+            if (name) setExpandedIndex(name);
+          }}
+          disabled={tableColumns.length === 0}
           className="cursor-pointer p-1 rounded text-neutral-500 hover:text-violet-400 hover:bg-white/[0.06] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-neutral-500"
           title="Add Index"
         >
@@ -116,7 +74,8 @@ export function IndexList({ table, tableColumns, tableIndexes, updateTable }: In
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      deleteIndex(idx.name);
+                      if (expandedIndex === idx.name) setExpandedIndex(null);
+                      deleteIndex(table.name, idx.name);
                     }}
                     className="p-0.5 text-neutral-600 hover:text-red-400 transition-colors shrink-0 cursor-pointer opacity-0 group-hover/idx:opacity-100"
                     title="Remove Index"
@@ -135,7 +94,10 @@ export function IndexList({ table, tableColumns, tableIndexes, updateTable }: In
                           <span className="w-1 h-1 rounded-full bg-neutral-600 shrink-0" />
                           <span className="text-[10px] font-mono text-neutral-300 flex-1 truncate">{colName}</span>
                           <button
-                            onClick={() => removeIndexColumn(idx.name, colName)}
+                            onClick={() => {
+                              const newName = removeIndexColumn(table.name, idx.name, colName);
+                              if (newName) setExpandedIndex(newName);
+                            }}
                             className="p-0.5 text-neutral-600 hover:text-red-400 transition-colors shrink-0 cursor-pointer opacity-0 group-hover/col:opacity-100"
                             title="Remove column from index"
                           >
@@ -150,7 +112,8 @@ export function IndexList({ table, tableColumns, tableIndexes, updateTable }: In
                         onChange={(e) => {
                           const col = e.target.value;
                           if (!col) return;
-                          addIndexColumn(idx.name, col);
+                          const newName = addIndexColumn(table.name, idx.name, col);
+                          if (newName) setExpandedIndex(newName);
                         }}
                         className="w-full bg-white/[0.04] border border-white/[0.06] rounded px-1.5 py-0.5 text-[10px] font-mono text-neutral-500 outline-none cursor-pointer mt-1"
                       >

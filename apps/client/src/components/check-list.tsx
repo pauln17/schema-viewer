@@ -1,35 +1,21 @@
-import type { Table } from "@/types/schema";
+import { useSchemaActions } from "@/hooks/useSchemaActions";
+import type { Schema, Table } from "@/types/schema";
 
-type CheckListProps = {
-  table: Table;
-  tableChecks: string[];
-  updateTable: (updated: Table) => void;
-};
+export function CheckList({ table, schema, token }: { table: Table; schema: Schema; token: string | undefined }) {
+  const { addCheck, updateCheck, deleteCheck } = useSchemaActions(schema, token);
 
-export function CheckList({ table, tableChecks, updateTable }: CheckListProps) {
-  const addCheck = () => {
-    updateTable({ ...table, checks: [...tableChecks, ""] });
-  };
-
-  const updateCheck = (idx: number, expr: string) => {
-    const updated = [...tableChecks];
-    updated[idx] = expr;
-    updateTable({ ...table, checks: updated });
-  };
-
-  const deleteCheck = (idx: number) => {
-    updateTable({ ...table, checks: tableChecks.filter((_, i) => i !== idx) });
-  };
+  const tableChecks = table.checks ?? [];
 
   return (
-    <div className="px-3 pt-1.5 pb-1.5 ml-3 border-t border-white/[0.06] space-y-1.5">
+    <div className="px-3 pt-1.5 pb-1.5 border-t border-white/[0.06] space-y-1.5">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
           Checks
         </span>
         <button
-          onClick={addCheck}
-          className="cursor-pointer p-1 rounded text-neutral-500 hover:text-amber-400 hover:bg-white/[0.06] transition-colors"
+          onClick={() => addCheck(table.name)}
+          disabled={(table.columns ?? []).length === 0}
+          className="cursor-pointer p-1 rounded text-neutral-500 hover:text-amber-400 hover:bg-white/[0.06] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-neutral-500"
           title="Add Check"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -46,12 +32,12 @@ export function CheckList({ table, tableChecks, updateTable }: CheckListProps) {
               <input
                 type="text"
                 value={expr}
-                onChange={(e) => updateCheck(idx, e.target.value)}
+                onChange={(e) => updateCheck(table.name, idx, e.target.value)}
                 placeholder="e.g. start_date < end_date"
                 className="flex-1 min-w-0 h-6 px-2 text-[10px] font-mono bg-white/[0.04] border border-white/[0.06] rounded text-neutral-400 placeholder-neutral-600 outline-none focus:border-amber-500/50"
               />
               <button
-                onClick={() => deleteCheck(idx)}
+                onClick={() => deleteCheck(table.name, idx)}
                 className="p-1 text-neutral-500 hover:text-red-400 transition-colors shrink-0 cursor-pointer"
                 title="Remove check"
               >

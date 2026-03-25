@@ -20,19 +20,6 @@ type ColumnRowProps = {
     localFkColumns: string[];
 };
 
-type ConstraintBadgeProps = {
-    text: string;
-    color: string;
-};
-
-function ConstraintBadge({ text, color }: ConstraintBadgeProps) {
-    return (
-        <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${color}`}>
-            {text}
-        </span>
-    );
-}
-
 function ColumnRow({ tableName, col, referencedColumns, localFkColumns }: ColumnRowProps) {
     const base = `${tableName}-${col.name}`;
     const needsSource = localFkColumns.includes(col.name);
@@ -52,8 +39,6 @@ function ColumnRow({ tableName, col, referencedColumns, localFkColumns }: Column
                     <Handle type="target" position={Position.Right} id={`${base}-target-right`} className="!w-2.5 !h-2.5 !opacity-0 pointer-events-none" />
                 </>
             )}
-
-            {/* Column Details */}
             <div className="flex items-center gap-2 min-w-0 w-28 shrink">
                 {col.primaryKey ? (
                     <svg className="w-3.5 h-3.5 text-yellow-400 shrink-0" fill="currentColor" viewBox="0 0 16 16">
@@ -68,16 +53,12 @@ function ColumnRow({ tableName, col, referencedColumns, localFkColumns }: Column
                 )}
                 <span className="text-xs text-white/90 truncate">{col.name}</span>
             </div>
-
-            {/* Constraints */}
             <div className="flex items-center gap-1 shrink-0 min-h-[20px]">
-                {isFk && <ConstraintBadge text="FK" color="bg-blue-500/20 text-blue-400" />}
-                {col.unique && <ConstraintBadge text="UQ" color="bg-cyan-500/20 text-cyan-400" />}
-                {col.notNull && <ConstraintBadge text="NN" color="bg-red-500/20 text-red-400" />}
-                {col.default !== undefined && <ConstraintBadge text="DF" color="bg-emerald-500/20 text-emerald-400" />}
+                {isFk && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/20 text-blue-400">FK</span>}
+                {col.unique && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-cyan-500/20 text-cyan-400">UQ</span>}
+                {col.notNull && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/20 text-red-400">NN</span>}
+                {col.default !== undefined && <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-400">DF</span>}
             </div>
-
-            {/* Column Type - aligned far right */}
             <span className="ml-auto text-[11px] text-white/50 font-mono shrink-0 text-right">{col.type}</span>
         </div>
     );
@@ -90,9 +71,7 @@ function TableNode({ data }: TableNodeProps) {
     const otherCols = columns.filter(c => !c.primaryKey);
 
     return (
-        <div className="w-[320px] min-w-[320px] rounded-lg border border-white/[0.12] bg-[#050505] overflow-hidden">
-            {/* Table Name */}
-            <div className="px-4 py-2.5 border-b border-white/[0.08]">
+        <div className="w-[320px] min-w-[320px] rounded-lg border border-white/[0.12] bg-[#050505] overflow-hidden">            <div className="px-4 py-2.5 border-b border-white/[0.08]">
                 <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -100,14 +79,10 @@ function TableNode({ data }: TableNodeProps) {
                     <span className="font-semibold text-sm text-white tracking-wide">{name}</span>
                 </div>
             </div>
-
-            {/* Columns */}
             <div className="divide-y divide-white/[0.06]">
                 {pkCols.map(col => <ColumnRow key={col.name} tableName={name} col={col} referencedColumns={referencedColumns} localFkColumns={localFkColumns} />)}
                 {otherCols.map(col => <ColumnRow key={col.name} tableName={name} col={col} referencedColumns={referencedColumns} localFkColumns={localFkColumns} />)}
             </div>
-
-            {/* Indexes */}
             {indexes.length > 0 && (
                 <div className="px-4 py-2.5 border-t border-white/[0.06] bg-white/[0.02]">
                     <div className="space-y-2">

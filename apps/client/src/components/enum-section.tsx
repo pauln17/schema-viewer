@@ -1,59 +1,20 @@
 import { useState } from "react";
 
+import { useSchemaActions } from "@/hooks/useSchemaActions";
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
-import type { Enum } from "@/types/schema";
+import type { Enum, Schema } from "@/types/schema";
 
-type EnumSectionProps = {
-  enum: Enum;
-  enums: Enum[];
-  updateEnums: (enums: Enum[]) => void;
-  deleteEnum: (enumName: string) => void;
-  renameEnum: (oldName: string, newName: string) => void;
-  renameEnumOption: (
-    enumName: string,
-    oldName: string,
-    newName: string,
-  ) => void;
-};
-
-export function EnumSection({
-  enum: enumItem,
-  enums,
-  updateEnums,
-  deleteEnum,
-  renameEnum,
-  renameEnumOption,
-}: EnumSectionProps) {
+export function EnumSection({ enum: enumItem, schema, token }: { enum: Enum; schema: Schema; token: string | undefined }) {
+  const { deleteEnum, renameEnum, renameEnumOption, addEnumOption, removeEnumOption } = useSchemaActions(schema, token);
   const [expanded, setExpanded] = useState(false);
   const [editingEnumName, setEditingEnumName] = useState(false);
   const [editingValue, setEditingValue] = useState<string | null>(null);
   const enumOptions = enumItem.options ?? [];
-  const updateEnum = (updated: Enum) =>
-    updateEnums(enums.map((e) => (e.name === enumItem.name ? updated : e)));
-
-  const removeOption = (value: string) => {
-    updateEnum({
-      ...enumItem,
-      options: enumOptions.filter((v) => v !== value),
-    });
-  };
-
-  const createOption = () => {
-    const base = "option";
-    let name = base;
-    let n = 0;
-    while (enumOptions.some((v) => v === name)) {
-      n += 1;
-      name = `${base}_${n}`;
-    }
-    updateEnum({ ...enumItem, options: [...enumOptions, name] });
-  };
 
   return (
     <div
       className={`rounded-lg overflow-hidden border transition-colors ${expanded ? "border-white/[0.1] bg-white/[0.02]" : "border-white/[0.06]"}`}
     >
-      {/* Enum Header */}
       <div
         role="button"
         tabIndex={0}
@@ -144,8 +105,6 @@ export function EnumSection({
           </button>
         </div>
       </div>
-
-      {/* Enum Values */}
       {expanded && (
         <div>
           {enumOptions.map((value) => (
@@ -186,7 +145,7 @@ export function EnumSection({
               </div>
               <button
                 type="button"
-                onClick={() => removeOption(value)}
+                onClick={() => removeEnumOption(enumItem.name, value)}
                 className="p-1 text-neutral-500 hover:text-red-400 transition-colors shrink-0 cursor-pointer"
                 title="Delete Value"
               >
@@ -196,7 +155,7 @@ export function EnumSection({
           ))}
 
           <button
-            onClick={createOption}
+            onClick={() => addEnumOption(enumItem.name)}
             className="cursor-pointer w-full flex items-center justify-center gap-1.5 px-3 py-2 text-neutral-500 hover:text-emerald-400 hover:bg-white/[0.04] transition-colors"
           >
             <svg
