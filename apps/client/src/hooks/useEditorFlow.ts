@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import {
   applyEdgeChanges,
   applyNodeChanges,
@@ -14,7 +15,7 @@ import type { Schema } from "@/types/schema";
 
 type UseEditorFlowProps = {
   schema: Schema;
-  updateQueryCache: (data: Schema) => void;
+  token?: string;
 };
 
 type FlowState = {
@@ -23,7 +24,8 @@ type FlowState = {
   edges: Edge[];
 };
 
-export const useEditorFlow = ({ schema, updateQueryCache }: UseEditorFlowProps) => {
+export const useEditorFlow = ({ schema, token }: UseEditorFlowProps) => {
+  const queryClient = useQueryClient();
   const tables = schema.definition.tables;
   const enums = schema.definition.enums;
 
@@ -63,7 +65,7 @@ export const useEditorFlow = ({ schema, updateQueryCache }: UseEditorFlowProps) 
 
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      updateQueryCache({
+      queryClient.setQueryData(["schema", token], {
         ...schema,
         definition: {
           enums,
@@ -73,7 +75,7 @@ export const useEditorFlow = ({ schema, updateQueryCache }: UseEditorFlowProps) 
         },
       });
     },
-    [enums, schema, tables, updateQueryCache],
+    [enums, queryClient, schema, tables, token],
   );
 
   return {

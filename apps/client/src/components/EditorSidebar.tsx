@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { memo, useRef } from "react";
 import { toast } from "react-toastify";
 
@@ -12,7 +13,6 @@ type EditorSidebarProps = {
   schema: Schema;
   tables: Table[];
   enums: Enum[];
-  updateQueryCache: (data: Schema) => void;
   token: string | undefined;
 };
 
@@ -21,10 +21,10 @@ type SidebarFooterProps = {
   tables: Table[];
   enums: Enum[];
   token: string | undefined;
-  updateQueryCache: (data: Schema) => void;
 };
 
-function SidebarFooter({ schema, tables, enums, updateQueryCache }: SidebarFooterProps) {
+function SidebarFooter({ schema, tables, enums, token }: SidebarFooterProps) {
+  const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const columnCount = tables.reduce((n, t) => n + (t.columns?.length ?? 0), 0);
   return (
@@ -83,7 +83,7 @@ function SidebarFooter({ schema, tables, enums, updateQueryCache }: SidebarFoote
               const text = e.target?.result as string;
               try {
                 const importedSchema = sqlToSchema(text);
-                updateQueryCache(importedSchema);
+                queryClient.setQueryData(["schema", token], importedSchema);
               } catch (err) {
                 toast.error("Invalid SQL", {
                   position: "bottom-center",
@@ -147,12 +147,11 @@ function EditorSidebar({
   schema,
   tables,
   enums,
-  updateQueryCache,
   token,
 }: EditorSidebarProps) {
+  const queryClient = useQueryClient();
   const updateTables = (updated: Table[]) => {
-    if (!schema) return;
-    updateQueryCache({
+    queryClient.setQueryData(["schema", token], {
       ...schema,
       definition: { enums, tables: updated },
     });
@@ -163,8 +162,6 @@ function EditorSidebar({
   };
 
   const renameTable = (oldName: string, newName: string) => {
-    if (!schema) return;
-
     const newTables = tables.map((t) => {
       const renamed = t.name === oldName ? { ...t, name: newName } : t;
       return {
@@ -175,7 +172,7 @@ function EditorSidebar({
       };
     });
 
-    updateQueryCache({
+    queryClient.setQueryData(["schema", token], {
       ...schema,
       definition: {
         enums,
@@ -185,8 +182,6 @@ function EditorSidebar({
   };
 
   const renameColumn = (tableName: string, oldName: string, newName: string) => {
-    if (!schema) return;
-
     const newTables = tables.map((t) => {
       if (t.name === tableName) {
         return {
@@ -209,7 +204,7 @@ function EditorSidebar({
       };
     });
 
-    updateQueryCache({
+    queryClient.setQueryData(["schema", token], {
       ...schema,
       definition: {
         enums,
@@ -219,8 +214,7 @@ function EditorSidebar({
   };
 
   const updateEnums = (updated: Enum[]) => {
-    if (!schema) return;
-    updateQueryCache({
+    queryClient.setQueryData(["schema", token], {
       ...schema,
       definition: { enums: updated, tables },
     });
@@ -231,8 +225,7 @@ function EditorSidebar({
   };
 
   const renameEnum = (oldName: string, newName: string) => {
-    if (!schema) return;
-    updateQueryCache({
+    queryClient.setQueryData(["schema", token], {
       ...schema,
       definition: {
         enums: enums.map((e) =>
@@ -246,8 +239,7 @@ function EditorSidebar({
   const renameEnumOption = (enumName: string, oldName: string, newName: string) => {
     const trimmed = newName.trim();
     if (!trimmed || trimmed === oldName) return;
-    if (!schema) return;
-    updateQueryCache({
+    queryClient.setQueryData(["schema", token], {
       ...schema,
       definition: {
         enums: enums.map((e) =>
@@ -354,7 +346,7 @@ function EditorSidebar({
           </div>
         </div>
 
-        <SidebarFooter schema={schema} tables={tables} enums={enums} token={token} updateQueryCache={updateQueryCache} />
+        <SidebarFooter schema={schema} tables={tables} enums={enums} token={token} />
       </div>
     </div>
   );

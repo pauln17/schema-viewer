@@ -7,7 +7,6 @@ import {
   ReactFlow,
 } from "@xyflow/react";
 import { useRouter } from "next/router";
-import { useCallback } from "react";
 import { ToastContainer } from "react-toastify";
 import { io } from "socket.io-client";
 
@@ -15,7 +14,6 @@ import EditorHeader from "@/components/EditorHeader";
 import EditorSidebar from "@/components/EditorSidebar";
 import { useEditorFlow } from "@/hooks/useEditorFlow";
 import { useQuerySchema } from "@/hooks/useQuerySchema";
-import type { Schema } from "@/types/schema";
 
 export default function Editor() {
   const router = useRouter();
@@ -27,20 +25,13 @@ export default function Editor() {
   const { data, isFetching } = useQuerySchema(token);
   const schema = data ?? { name: "", definition: { tables: [], enums: [] } };
 
-  const updateQueryCache = useCallback(
-    (data: Schema) => {
-      queryClient.setQueryData(["schema", token], data);
-    },
-    [queryClient, token],
-  );
-
   const tables = schema.definition.tables;
   const enums = schema.definition.enums;
 
   const { flowNodes, flowEdges, nodeTypes, onNodesChange, onEdgesChange, onNodeDragStop } =
     useEditorFlow({
       schema,
-      updateQueryCache,
+      token,
     });
 
   const isTokenLoading = token && (!!router.isReady && (isFetching));
@@ -59,7 +50,9 @@ export default function Editor() {
           <EditorHeader
             schema={schema}
             token={token}
-            renameSchema={(name) => schema && updateQueryCache({ ...schema, name })}
+            renameSchema={(name) =>
+              queryClient.setQueryData(["schema", token], { ...schema, name })
+            }
           />
           <div className="flex flex-1 min-h-0 min-w-0 flex-col sm:flex-row">
             <div className="w-full sm:w-72 md:w-80 shrink-0 flex flex-col overflow-hidden border-b sm:border-b-0 border-white/[0.06] max-h-[45%] sm:max-h-full">
@@ -67,7 +60,6 @@ export default function Editor() {
                 schema={schema}
                 tables={tables}
                 enums={enums}
-                updateQueryCache={updateQueryCache}
                 token={token ?? undefined}
               />
             </div>
