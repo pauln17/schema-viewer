@@ -1,10 +1,10 @@
 import type { Table } from "@/types/schema";
 
-interface CheckListProps {
+type CheckListProps = {
   table: Table;
   tableChecks: string[];
   updateTable: (updated: Table) => void;
-}
+};
 
 export function CheckList({ table, tableChecks, updateTable }: CheckListProps) {
   const addCheck = () => {

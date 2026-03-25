@@ -8,7 +8,7 @@ import { ColumnRow } from "./ColumnRow";
 import { IndexList } from "./IndexList";
 import { ReferenceList } from "./ReferenceList";
 
-interface TableSectionProps {
+type TableSectionProps = {
   table: Table;
   allTables: Table[];
   enums: Enum[];
@@ -16,7 +16,7 @@ interface TableSectionProps {
   deleteTable: (tableName: string) => void;
   renameTable: (oldName: string, newName: string) => void;
   renameColumn: (tableName: string, oldName: string, newName: string) => void;
-}
+};
 
 const SQL_TYPE_GROUPS: Record<string, string[]> = {
   Integers: ["INT", "BIGINT", "SMALLINT", "SERIAL", "BIGSERIAL"],

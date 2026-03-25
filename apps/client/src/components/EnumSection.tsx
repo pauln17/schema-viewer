@@ -3,7 +3,7 @@ import { useState } from "react";
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
 import type { Enum } from "@/types/schema";
 
-interface EnumSectionProps {
+type EnumSectionProps = {
   enum: Enum;
   enums: Enum[];
   updateEnums: (enums: Enum[]) => void;
@@ -14,7 +14,7 @@ interface EnumSectionProps {
     oldName: string,
     newName: string,
   ) => void;
-}
+};
 
 export function EnumSection({
   enum: enumItem,

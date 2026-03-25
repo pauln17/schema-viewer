@@ -1,13 +1,13 @@
 import type { Column, Reference,Table } from "@/types/schema";
 
-interface ReferenceListProps {
+type ReferenceListProps = {
   table: Table;
   tableColumns: Column[];
   allTables: Table[];
   fkTargetTables: Table[];
   tableRefs: Reference[];
   updateTable: (updated: Table) => void;
-}
+};
 
 export function ReferenceList({
   table,

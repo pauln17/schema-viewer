@@ -1,10 +1,10 @@
 import { type ReactNode,useEffect } from "react";
 
-interface ShareModalProps {
+type ShareModalProps = {
   open: boolean;
   onClose: () => void;
   children?: ReactNode;
-}
+};
 
 export default function ShareModal({ open, onClose, children }: ShareModalProps) {
   useEffect(() => {

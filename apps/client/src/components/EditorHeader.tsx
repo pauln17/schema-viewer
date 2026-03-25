@@ -6,11 +6,11 @@ import { useNewToken } from "@/hooks/useNewToken";
 import { useUpdateSchema } from "@/hooks/useUpdateSchema";
 import { Schema } from "@/types/schema";
 
-interface EditorHeaderProps {
+type EditorHeaderProps = {
   schema: Schema;
   token: string | undefined;
   renameSchema: (name: string) => void;
-}
+};
 
 export default function EditorHeader({
   schema,

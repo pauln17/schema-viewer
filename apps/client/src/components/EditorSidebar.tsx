@@ -8,21 +8,21 @@ import type { Enum, Schema, Table } from "@/types/schema";
 import { EnumSection } from "./EnumSection";
 import { TableSection } from "./TableSection";
 
-interface EditorSidebarProps {
+type EditorSidebarProps = {
   schema: Schema;
   tables: Table[];
   enums: Enum[];
   updateQueryCache: (data: Schema) => void;
   token: string | undefined;
-}
+};
 
-interface SidebarFooterProps {
+type SidebarFooterProps = {
   schema: Schema;
   tables: Table[];
   enums: Enum[];
   token: string | undefined;
   updateQueryCache: (data: Schema) => void;
-}
+};
 
 function SidebarFooter({ schema, tables, enums, updateQueryCache }: SidebarFooterProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);

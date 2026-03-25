@@ -3,31 +3,31 @@ import { memo } from 'react';
 
 import type { Column, Enum,Index } from '@/types/schema';
 
-interface TableNodeData {
+type TableNodeData = {
     label: string;
     columns: Column[];
     indexes: Index[];
     enums: Enum[];
     referencedColumns: string[];
     localFkColumns: string[];
-}
+};
 
-interface TableNodeProps {
+type TableNodeProps = {
     data: TableNodeData;
-}
+};
 
-interface ColumnRowProps {
+type ColumnRowProps = {
     tableName: string;
     col: Column;
     enums: Enum[];
     referencedColumns: string[];
     localFkColumns: string[];
-}
+};
 
-interface ConstraintBadgeProps {
+type ConstraintBadgeProps = {
     text: string;
     color: string;
-}
+};
 
 function ConstraintBadge({ text, color }: ConstraintBadgeProps) {
     return (

@@ -2,12 +2,12 @@ import { useState } from "react";
 
 import type { Column, Index,Table } from "@/types/schema";
 
-interface IndexListProps {
+type IndexListProps = {
   table: Table;
   tableColumns: Column[];
   tableIndexes: Index[];
   updateTable: (updated: Table) => void;
-}
+};
 
 export function IndexList({ table, tableColumns, tableIndexes, updateTable }: IndexListProps) {
   const [expandedIndex, setExpandedIndex] = useState<string | null>(null);

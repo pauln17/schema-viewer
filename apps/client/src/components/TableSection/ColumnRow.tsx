@@ -3,7 +3,7 @@ import { useState } from "react";
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
 import type { Column } from "@/types/schema";
 
-interface ColumnRowProps {
+type ColumnRowProps = {
   col: Column;
   pkColumns: Set<string>;
   fkLocalColumns: Set<string>;
@@ -14,7 +14,7 @@ interface ColumnRowProps {
   updateColumn: (colName: string, patch: Partial<Column>) => void;
   deleteColumn: (colName: string) => void;
   renameColumn: (oldName: string, newName: string) => void;
-}
+};
 
 export function ColumnRow({
   col,
