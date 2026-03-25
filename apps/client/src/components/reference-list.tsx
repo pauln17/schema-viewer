@@ -1,4 +1,4 @@
-import type { Column, Reference,Table } from "@/types/schema";
+import type { Column, Reference, Table } from "@/types/schema";
 
 type ReferenceListProps = {
   table: Table;

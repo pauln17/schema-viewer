@@ -9,7 +9,7 @@ import {
 } from "@xyflow/react";
 import { useCallback, useMemo, useState } from "react";
 
-import TableNode from "@/components/TableNode";
+import TableNode from "@/components/table-node";
 import { buildEdges, buildNodes } from "@/lib/react-flow";
 import type { Schema } from "@/types/schema";
 

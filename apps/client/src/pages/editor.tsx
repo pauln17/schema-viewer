@@ -8,10 +8,9 @@ import {
 } from "@xyflow/react";
 import { useRouter } from "next/router";
 import { ToastContainer } from "react-toastify";
-import { io } from "socket.io-client";
 
-import EditorHeader from "@/components/EditorHeader";
-import EditorSidebar from "@/components/EditorSidebar";
+import EditorHeader from "@/components/editor-header";
+import EditorSidebar from "@/components/editor-sidebar";
 import { useEditorFlow } from "@/hooks/useEditorFlow";
 import { useQuerySchema } from "@/hooks/useQuerySchema";
 
@@ -20,13 +19,8 @@ export default function Editor() {
   const token = router.query.token as string | undefined;
   const queryClient = useQueryClient();
 
-  io(`${process.env.NEXT_PUBLIC_SERVER_URL}`)
-
   const { data, isFetching } = useQuerySchema(token);
   const schema = data ?? { name: "", definition: { tables: [], enums: [] } };
-
-  const tables = schema.definition.tables;
-  const enums = schema.definition.enums;
 
   const { flowNodes, flowEdges, nodeTypes, onNodesChange, onEdgesChange, onNodeDragStop } =
     useEditorFlow({
@@ -58,9 +52,9 @@ export default function Editor() {
             <div className="w-full sm:w-72 md:w-80 shrink-0 flex flex-col overflow-hidden border-b sm:border-b-0 border-white/[0.06] max-h-[45%] sm:max-h-full">
               <EditorSidebar
                 schema={schema}
-                tables={tables}
-                enums={enums}
-                token={token ?? undefined}
+                tables={schema.definition.tables}
+                enums={schema.definition.enums}
+                token={token}
               />
             </div>
             <div className="flex-1 min-h-0 min-w-0 overflow-hidden">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import ShareModal from "@/components/ShareModal";
+import ShareModal from "@/components/share-modal";
 import { useCreateSchema } from "@/hooks/useCreateSchema";
 import { useNewToken } from "@/hooks/useNewToken";
 import { useUpdateSchema } from "@/hooks/useUpdateSchema";

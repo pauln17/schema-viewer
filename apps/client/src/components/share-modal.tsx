@@ -1,4 +1,4 @@
-import { type ReactNode,useEffect } from "react";
+import { type ReactNode, useEffect } from "react";
 
 type ShareModalProps = {
   open: boolean;
@@ -57,4 +57,3 @@ export default function ShareModal({ open, onClose, children }: ShareModalProps)
     </div>
   );
 }
-
