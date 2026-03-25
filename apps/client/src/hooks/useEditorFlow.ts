@@ -27,7 +27,7 @@ export const useEditorFlow = ({ schema, updateQueryCache }: UseEditorFlowProps) 
   const tables = schema.definition.tables;
   const enums = schema.definition.enums;
 
-  const baseNodes = useMemo(() => buildNodes(tables, enums), [tables, enums]);
+  const baseNodes = useMemo(() => buildNodes(tables), [tables]);
   const baseEdges = useMemo(() => buildEdges(tables), [tables]);
 
   const [flowState, setFlowState] = useState<FlowState>({

@@ -1,13 +1,10 @@
 import { Handle, Position } from '@xyflow/react';
 import { memo } from 'react';
 
-import type { Column, Enum,Index } from '@/types/schema';
+import type { Column, Table } from '@/types/schema';
 
 type TableNodeData = {
-    label: string;
-    columns: Column[];
-    indexes: Index[];
-    enums: Enum[];
+    table: Table;
     referencedColumns: string[];
     localFkColumns: string[];
 };
@@ -19,7 +16,6 @@ type TableNodeProps = {
 type ColumnRowProps = {
     tableName: string;
     col: Column;
-    enums: Enum[];
     referencedColumns: string[];
     localFkColumns: string[];
 };
@@ -37,8 +33,7 @@ function ConstraintBadge({ text, color }: ConstraintBadgeProps) {
     );
 }
 
-function ColumnRow({ tableName, col, enums, referencedColumns, localFkColumns }: ColumnRowProps) {
-    const displayType = enums.some(e => e.name.toUpperCase() === col.type.toUpperCase()) ? col.type.toUpperCase() : col.type;
+function ColumnRow({ tableName, col, referencedColumns, localFkColumns }: ColumnRowProps) {
     const base = `${tableName}-${col.name}`;
     const needsSource = localFkColumns.includes(col.name);
     const needsTarget = referencedColumns.includes(col.name);
@@ -57,6 +52,7 @@ function ColumnRow({ tableName, col, enums, referencedColumns, localFkColumns }:
                     <Handle type="target" position={Position.Right} id={`${base}-target-right`} className="!w-2.5 !h-2.5 !opacity-0 pointer-events-none" />
                 </>
             )}
+
             {/* Column Details */}
             <div className="flex items-center gap-2 min-w-0 w-28 shrink">
                 {col.primaryKey ? (
@@ -82,13 +78,14 @@ function ColumnRow({ tableName, col, enums, referencedColumns, localFkColumns }:
             </div>
 
             {/* Column Type - aligned far right */}
-            <span className="ml-auto text-[11px] text-white/50 font-mono shrink-0 text-right">{displayType}</span>
+            <span className="ml-auto text-[11px] text-white/50 font-mono shrink-0 text-right">{col.type}</span>
         </div>
     );
 }
 
 function TableNode({ data }: TableNodeProps) {
-    const { label, columns, indexes, enums, referencedColumns, localFkColumns } = data;
+    const { table, referencedColumns, localFkColumns } = data;
+    const { name, columns, indexes } = table;
     const pkCols = columns.filter(c => c.primaryKey);
     const otherCols = columns.filter(c => !c.primaryKey);
 
@@ -100,14 +97,14 @@ function TableNode({ data }: TableNodeProps) {
                     <svg className="w-4 h-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                    <span className="font-semibold text-sm text-white tracking-wide">{label}</span>
+                    <span className="font-semibold text-sm text-white tracking-wide">{name}</span>
                 </div>
             </div>
 
             {/* Columns */}
             <div className="divide-y divide-white/[0.06]">
-                {pkCols.map(col => <ColumnRow key={col.name} tableName={label} col={col} enums={enums} referencedColumns={referencedColumns} localFkColumns={localFkColumns} />)}
-                {otherCols.map(col => <ColumnRow key={col.name} tableName={label} col={col} enums={enums} referencedColumns={referencedColumns} localFkColumns={localFkColumns} />)}
+                {pkCols.map(col => <ColumnRow key={col.name} tableName={name} col={col} referencedColumns={referencedColumns} localFkColumns={localFkColumns} />)}
+                {otherCols.map(col => <ColumnRow key={col.name} tableName={name} col={col} referencedColumns={referencedColumns} localFkColumns={localFkColumns} />)}
             </div>
 
             {/* Indexes */}

@@ -34,8 +34,8 @@ export default function Editor() {
     [queryClient, token],
   );
 
-  const tables = schema?.definition?.tables ?? [];
-  const enums = schema?.definition?.enums ?? [];
+  const tables = schema.definition.tables;
+  const enums = schema.definition.enums;
 
   const { flowNodes, flowEdges, nodeTypes, onNodesChange, onEdgesChange, onNodeDragStop } =
     useEditorFlow({

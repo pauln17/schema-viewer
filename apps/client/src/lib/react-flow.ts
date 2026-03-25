@@ -1,6 +1,6 @@
 import type { Edge, Node } from "@xyflow/react";
 
-import type { Enum, Table } from "@/types/schema";
+import type { Table } from "@/types/schema";
 
 const getLocalFkColumns = (table: Table): string[] => {
     const names: string[] = [];
@@ -23,16 +23,13 @@ const getReferencedColumns = (tableName: string, tables: Table[]): string[] => {
     return [...new Set(names)];
 };
 
-export const buildNodes = (tables: Table[], enums: Enum[]): Node[] => {
+export const buildNodes = (tables: Table[]): Node[] => {
     return tables.map((t) => ({
         id: t.name,
         type: "table",
         position: t.position ?? { x: 0, y: 0 },
         data: {
-            label: t.name,
-            columns: t.columns ?? [],
-            indexes: t.indexes ?? [],
-            enums,
+            table: t,
             referencedColumns: getReferencedColumns(t.name, tables),
             localFkColumns: getLocalFkColumns(t),
         },
