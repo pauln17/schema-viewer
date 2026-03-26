@@ -43,7 +43,7 @@ export default function EditorHeader({ schema, token, socket }: { schema: Schema
           type="text"
           value={schema?.name ?? ""}
           onChange={(e) => renameSchema(e.target.value)}
-          placeholder={token ? "Untitled" : undefined}
+          placeholder={'Title'}
           maxLength={15}
           className="w-full max-w-48 min-w-0 py-1 pl-0 pr-2 text-[11px] font-semibold text-neutral-400 uppercase tracking-widest bg-transparent border-none outline-none focus:outline-none focus:ring-0 placeholder:text-neutral-500 text-left cursor-text"
         />

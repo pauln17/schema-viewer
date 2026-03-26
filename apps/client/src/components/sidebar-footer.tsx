@@ -102,7 +102,16 @@ export function SidebarFooter({ schema, token }: { schema: Schema; token: string
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
               a.href = url;
-              a.download = `${(schema.name ?? "untitled").toLowerCase().trim().split(/\s+/).join("-")}-postgres.sql`;
+              const slug =
+                (schema.name ?? "")
+                  .trim()
+                  .replace(/^['"]+|['"]+$/g, "")
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")
+                  .replace(/[<>:"/\\|?*]+/g, "")
+                  .replace(/-+/g, "-")
+                  .replace(/^-+|-+$/g, "") || "untitled";
+              a.download = `${slug}-postgres.sql`;
               a.click();
               URL.revokeObjectURL(url);
             } catch (err) {

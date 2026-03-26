@@ -20,7 +20,7 @@ export interface Column {
   primaryKey?: boolean;
   notNull?: boolean;
   unique?: boolean;
-  default?: string;
+  default?: string | number | boolean;
 }
 
 export interface Enum {

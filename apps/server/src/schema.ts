@@ -13,7 +13,7 @@ const columnSchema = z.object({
   primaryKey: z.boolean().default(false).optional(),
   unique: z.boolean().default(false).optional(),
   notNull: z.boolean().default(false).optional(),
-  default: z.union([z.string(), z.number(), z.boolean()]).default('NULL').optional(),
+  default: z.union([z.string(), z.number(), z.boolean()]).optional(),
 });
 
 const indexSchema = z.object({

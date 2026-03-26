@@ -1,20 +1,41 @@
 import { Schema } from "@/types/schema";
 
-/** Normalize Identifier for PostgreSQL: Lowercase, No Spaces, Only A-Z 0-9 _ - */
 export const normalizeIdentifier = (s: string): string =>
     s.toLowerCase().replace(/\s/g, "").replace(/[^a-z0-9_-]/g, "");
 
-// Format Default Expression Values for PostgreSQL
-const SQL_DEFAULT_EXPRS = new Set(["current_timestamp", "current_date", "current_time", "localtimestamp", "localtime"]);
-const formatDefault = (v: string): string => {
-    if (/^-?\d+(\.\d+)?$/.test(v)) return `DEFAULT ${v}`;
-    if (/^(true|false)$/i.test(v)) return `DEFAULT ${v.toLowerCase()}`;
-    if (/^[a-z_][a-z0-9_]*\s*\(\)$/i.test(v)) return `DEFAULT ${v.replace(/\s/g, "")}`;
-    if (SQL_DEFAULT_EXPRS.has(v.toLowerCase())) return `DEFAULT ${v}`;
-    return `DEFAULT '${v}'`;
+const SQL_KEYWORDS = new Set(["current_timestamp", "current_date", "current_time", "localtimestamp", "localtime"]);
+
+const stripOuterParens = (s: string): string => {
+    let v = s.trim();
+    while (v.startsWith("(") && v.endsWith(")")) {
+        const inner = v.slice(1, -1).trim();
+        let depth = 0, balanced = true;
+        for (const ch of inner) {
+            if (ch === "(") depth++;
+            else if (ch === ")") { depth--; if (depth < 0) { balanced = false; break; } }
+        }
+        if (!balanced || depth !== 0) break;
+        v = inner;
+    }
+    return v.replace(/\b([a-z_][a-z0-9_]*)\s+\(\s*\)/gi, (_, id: string) => `${id}()`).trim();
 };
 
-// Schema -> Dialect Specific SQLs
+const formatDefault = (raw: string | number | boolean | undefined): string | null => {
+    if (raw === undefined || raw === null) return null;
+    if (typeof raw === "boolean") return `DEFAULT ${raw}`;
+    if (typeof raw === "number") return `DEFAULT ${raw}`;
+
+    const v = stripOuterParens(String(raw));
+    if (!v || /^null$/i.test(v)) return null;
+    if (/^-?\d+(\.\d+)?$/.test(v)) return `DEFAULT ${v}`;
+    if (/^(true|false)$/i.test(v)) return `DEFAULT ${v.toLowerCase()}`;
+    if (SQL_KEYWORDS.has(v.toLowerCase())) return `DEFAULT ${v}`;
+    if (/^[a-z_][a-z0-9_]*\([\s\S]*\)$/i.test(v)) return `DEFAULT ${v}`;
+    if (/^'(?:[^']|'')*'$/.test(v)) return `DEFAULT ${v}`;
+    if (v.includes("::")) return `DEFAULT ${v}`;
+    return `DEFAULT '${v.replace(/'/g, "''")}'`;
+};
+
 const schemaToSql = (schema: Schema, dialect: string): string => {
     switch (dialect) {
         case "postgres":
@@ -43,15 +64,16 @@ const toPostgresSql = (schema: Schema): string => {
         }
 
         const columns = table.columns.map((c) => {
-            const column: string[] = [c.name];
-            if (c.type) column.push(c.type);
-            if (c.primaryKey && table.keys?.length === 1) column.push("PRIMARY KEY");
-            if (c.unique) column.push("UNIQUE");
-            if (c.notNull) column.push("NOT NULL");
-            if (c.default != null) column.push(formatDefault(String(c.default)));
-            const singleFk = singleFks.get(c.name);
-            if (singleFk) column.push(`REFERENCES ${singleFk.referencedTable}(${singleFk.referencedColumn})`);
-            return column.join(" ");
+            const parts: string[] = [c.name];
+            if (c.type) parts.push(c.type);
+            if (c.primaryKey && table.keys?.length === 1) parts.push("PRIMARY KEY");
+            if (c.unique) parts.push("UNIQUE");
+            if (c.notNull) parts.push("NOT NULL");
+            const def = formatDefault(c.default);
+            if (def) parts.push(def);
+            const fk = singleFks.get(c.name);
+            if (fk) parts.push(`REFERENCES ${fk.referencedTable}(${fk.referencedColumn})`);
+            return parts.join(" ");
         }).join(",\n");
 
         const primaryKeys = table.keys?.length > 1 ? `\nPRIMARY KEY (${table.keys.join(", ")}),` : '';
