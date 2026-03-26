@@ -1,4 +1,5 @@
 import { memo } from "react";
+import type { Socket } from "socket.io-client";
 
 import { useSchemaActions } from "@/hooks/useSchemaActions";
 import type { Schema } from "@/types/schema";
@@ -7,9 +8,9 @@ import { EnumSection } from "./enum-section";
 import { SidebarFooter } from "./sidebar-footer";
 import { TableSection } from "./table-section";
 
-function EditorSidebar({ schema, token }: { schema: Schema; token: string | undefined }) {
+function EditorSidebar({ schema, token, socket }: { schema: Schema; token: string | undefined, socket: Socket | undefined }) {
   const { tables, enums } = schema.definition;
-  const { createTable, createEnum } = useSchemaActions(schema, token);
+  const { createTable, createEnum } = useSchemaActions(schema, token, socket);
 
   return (
     <div className="w-full min-w-0 h-full bg-[#070707] flex flex-col overflow-hidden">
@@ -36,6 +37,7 @@ function EditorSidebar({ schema, token }: { schema: Schema; token: string | unde
                 table={table}
                 schema={schema}
                 token={token}
+                socket={socket}
               />
             ))}
           </div>
@@ -62,6 +64,7 @@ function EditorSidebar({ schema, token }: { schema: Schema; token: string | unde
                   enum={enumItem}
                   schema={schema}
                   token={token}
+                  socket={socket}
                 />
               ))}
             </div>

@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { type Socket } from "socket.io-client";
 
 import { useSchemaActions } from "@/hooks/useSchemaActions";
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
 import type { Enum, Schema } from "@/types/schema";
 
-export function EnumSection({ enum: enumItem, schema, token }: { enum: Enum; schema: Schema; token: string | undefined }) {
-  const { deleteEnum, renameEnum, renameEnumOption, addEnumOption, removeEnumOption } = useSchemaActions(schema, token);
+export function EnumSection({ enum: enumItem, schema, token, socket }: { enum: Enum; schema: Schema; token: string | undefined, socket: Socket | undefined }) {
+  const { deleteEnum, renameEnum, renameEnumOption, addEnumOption, removeEnumOption } = useSchemaActions(schema, token, socket);
   const [expanded, setExpanded] = useState(false);
   const [editingEnumName, setEditingEnumName] = useState(false);
   const [editingValue, setEditingValue] = useState<string | null>(null);

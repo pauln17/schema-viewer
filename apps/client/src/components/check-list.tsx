@@ -1,8 +1,10 @@
+import { type Socket } from "socket.io-client";
+
 import { useSchemaActions } from "@/hooks/useSchemaActions";
 import type { Schema, Table } from "@/types/schema";
 
-export function CheckList({ table, schema, token }: { table: Table; schema: Schema; token: string | undefined }) {
-  const { addCheck, updateCheck, deleteCheck } = useSchemaActions(schema, token);
+export function CheckList({ table, schema, token, socket }: { table: Table; schema: Schema; token: string | undefined, socket: Socket | undefined }) {
+  const { addCheck, updateCheck, deleteCheck } = useSchemaActions(schema, token, socket);
 
   const tableChecks = table.checks ?? [];
 

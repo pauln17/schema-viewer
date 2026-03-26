@@ -1,7 +1,9 @@
+import { type Socket } from "socket.io-client";
+
 import { useSchemaActions } from "@/hooks/useSchemaActions";
 import type { Schema, Table } from "@/types/schema";
 
-export function ReferenceList({ table, schema, token }: { table: Table; schema: Schema; token: string | undefined }) {
+export function ReferenceList({ table, schema, token, socket }: { table: Table; schema: Schema; token: string | undefined, socket: Socket | undefined }) {
   const {
     addReference,
     deleteReference,
@@ -10,7 +12,7 @@ export function ReferenceList({ table, schema, token }: { table: Table; schema: 
     changeRefForeignCol,
     addRefPair,
     removeRefPair,
-  } = useSchemaActions(schema, token);
+  } = useSchemaActions(schema, token, socket);
 
   const allTables = schema.definition.tables;
   const tableColumns = table.columns ?? [];

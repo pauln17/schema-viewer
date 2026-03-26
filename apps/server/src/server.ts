@@ -40,8 +40,9 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 io.on("connection", (socket) => {
-  socket.on('test', (data) => {
-    console.log("Test", data);
+  socket.join(socket.handshake.auth.token)
+  socket.on("schema", (data) => {
+    socket.broadcast.to(socket.handshake.auth.token).emit("schema", data);
   });
 });
 

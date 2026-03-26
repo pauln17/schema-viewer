@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { type Socket } from "socket.io-client";
 
 import { useSchemaActions } from "@/hooks/useSchemaActions";
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
@@ -9,8 +10,8 @@ import { ColumnRow } from "./column-row";
 import { IndexList } from "./index-list";
 import { ReferenceList } from "./reference-list";
 
-export function TableSection({ table, schema, token }: { table: Table; schema: Schema; token: string | undefined }) {
-  const { addColumn, deleteTable, renameTable } = useSchemaActions(schema, token);
+export function TableSection({ table, schema, token, socket }: { table: Table; schema: Schema; token: string | undefined, socket: Socket | undefined }) {
+  const { addColumn, deleteTable, renameTable } = useSchemaActions(schema, token, socket);
   const [expanded, setExpanded] = useState(false);
   const [editingTableName, setEditingTableName] = useState(false);
 
@@ -131,14 +132,15 @@ export function TableSection({ table, schema, token }: { table: Table; schema: S
               pkColumns={pkColumns}
               fkLocalColumns={fkLocalColumns}
               enumNames={enumNames}
+              socket={socket}
             />
           ))}
 
-          <IndexList table={table} schema={schema} token={token} />
+          <IndexList table={table} schema={schema} token={token} socket={socket} />
 
-          <ReferenceList table={table} schema={schema} token={token} />
+          <ReferenceList table={table} schema={schema} token={token} socket={socket} />
 
-          <CheckList table={table} schema={schema} token={token} />
+          <CheckList table={table} schema={schema} token={token} socket={socket} />
 
           <button
             onClick={() => addColumn(table.name)}

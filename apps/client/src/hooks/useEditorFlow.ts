@@ -26,8 +26,8 @@ type FlowState = {
 
 export const useEditorFlow = ({ schema, token }: UseEditorFlowProps) => {
   const queryClient = useQueryClient();
-  const tables = schema.definition.tables;
-  const enums = schema.definition.enums;
+  const tables = schema.definition.tables ?? [];
+  const enums = schema.definition.enums ?? [];
 
   const baseNodes = useMemo(() => buildNodes(tables), [tables]);
   const baseEdges = useMemo(() => buildEdges(tables), [tables]);

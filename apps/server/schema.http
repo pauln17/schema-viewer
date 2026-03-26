@@ -1,6 +1,5 @@
 @baseUrl = http://localhost:5001
-@token = d7dfcaca6fc3122aa7561ddbdedc751e97d5efba12b96ce8e98907d8693608dd
-
+@token = 33cf031631b860409b254e0e7699053c39ced803eee5716fc8c7a1e44201cb30
 
 ### Get Schema
 GET {{baseUrl}}/schemas

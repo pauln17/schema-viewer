@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { Socket } from "socket.io-client";
 
 import ShareModal from "@/components/share-modal";
 import { useCreateSchema } from "@/hooks/useCreateSchema";
@@ -7,8 +8,8 @@ import { useSchemaActions } from "@/hooks/useSchemaActions";
 import { useUpdateSchema } from "@/hooks/useUpdateSchema";
 import type { Schema } from "@/types/schema";
 
-export default function EditorHeader({ schema, token }: { schema: Schema; token: string | undefined }) {
-  const { renameSchema } = useSchemaActions(schema, token);
+export default function EditorHeader({ schema, token, socket }: { schema: Schema; token: string | undefined, socket: Socket | undefined }) {
+  const { renameSchema } = useSchemaActions(schema, token, socket);
   const { updateSchema, isUpdating } = useUpdateSchema(token);
   const { createSchema, isCreating } = useCreateSchema(token);
   const [isShareOpen, setIsShareOpen] = useState(false);

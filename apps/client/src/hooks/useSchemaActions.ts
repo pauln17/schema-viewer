@@ -1,21 +1,33 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
+import { type Socket } from "socket.io-client";
 
 import type { Column, Enum, Index, Reference, Schema, Table } from "@/types/schema";
 
-export const useSchemaActions = (schema: Schema, token: string | undefined) => {
+export const useSchemaActions = (schema: Schema, token: string | undefined, socket: Socket | undefined) => {
   const queryClient = useQueryClient();
   const { tables, enums } = schema.definition;
 
+  const emitData = useCallback(() => {
+    if (socket) {
+      const data = queryClient.getQueryData(["schema", token]);
+      if (!data) return;
+      socket.emit("schema", data)
+    }
+  }, [socket, queryClient, token]);
+
   const setSchema = useCallback(
-    (patch: Partial<Schema>) =>
-      queryClient.setQueryData(["schema", token], { ...schema, ...patch }),
+    (patch: Partial<Schema>) => {
+      queryClient.setQueryData(["schema", token], { ...schema, ...patch })
+      emitData();
+    },
     [queryClient, schema, token],
   );
 
   const setDefinition = useCallback(
-    (tablesPatch: Table[], enumsPatch: Enum[]) =>
-      setSchema({ definition: { tables: tablesPatch, enums: enumsPatch } }),
+    (tablesPatch: Table[], enumsPatch: Enum[]) => {
+      setSchema({ definition: { tables: tablesPatch, enums: enumsPatch } })
+    },
     [setSchema],
   );
 
@@ -105,11 +117,11 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                columns: (t.columns ?? []).map((c) =>
-                  c.name === colName ? { ...c, ...patch } : c,
-                ),
-              }
+              ...t,
+              columns: (t.columns ?? []).map((c) =>
+                c.name === colName ? { ...c, ...patch } : c,
+              ),
+            }
             : t,
         ),
         enums,
@@ -144,11 +156,11 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                columns: (t.columns ?? []).filter((c) => c.name !== colName),
-                indexes: updatedIndexes,
-                references: updatedRefs,
-              }
+              ...t,
+              columns: (t.columns ?? []).filter((c) => c.name !== colName),
+              indexes: updatedIndexes,
+              references: updatedRefs,
+            }
             : t,
         ),
         enums,
@@ -178,11 +190,11 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
             r.referencedTable !== tableName
               ? r
               : {
-                  ...r,
-                  referencedColumns: r.referencedColumns.map((c) =>
-                    c === oldName ? newName : c,
-                  ),
-                },
+                ...r,
+                referencedColumns: r.referencedColumns.map((c) =>
+                  c === oldName ? newName : c,
+                ),
+              },
           ),
         };
       });
@@ -215,11 +227,11 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                indexes: (t.indexes ?? []).map((i) =>
-                  i.name === idxName ? { ...i, ...patch } : i,
-                ),
-              }
+              ...t,
+              indexes: (t.indexes ?? []).map((i) =>
+                i.name === idxName ? { ...i, ...patch } : i,
+              ),
+            }
             : t,
         ),
         enums,
@@ -254,13 +266,13 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                indexes: (t.indexes ?? []).map((i) =>
-                  i.name === idxName
-                    ? { ...i, indexedColumns: cols, name: newName }
-                    : i,
-                ),
-              }
+              ...t,
+              indexes: (t.indexes ?? []).map((i) =>
+                i.name === idxName
+                  ? { ...i, indexedColumns: cols, name: newName }
+                  : i,
+              ),
+            }
             : t,
         ),
         enums,
@@ -282,13 +294,13 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                indexes: (t.indexes ?? []).map((i) =>
-                  i.name === idxName
-                    ? { ...i, indexedColumns: cols, name: newName }
-                    : i,
-                ),
-              }
+              ...t,
+              indexes: (t.indexes ?? []).map((i) =>
+                i.name === idxName
+                  ? { ...i, indexedColumns: cols, name: newName }
+                  : i,
+              ),
+            }
             : t,
         ),
         enums,
@@ -332,9 +344,9 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                references: (t.references ?? []).filter((_, i) => i !== refIdx),
-              }
+              ...t,
+              references: (t.references ?? []).filter((_, i) => i !== refIdx),
+            }
             : t,
         ),
         enums,
@@ -349,11 +361,11 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                references: (t.references ?? []).map((r, i) =>
-                  i === refIdx ? { ...r, ...patch } : r,
-                ),
-              }
+              ...t,
+              references: (t.references ?? []).map((r, i) =>
+                i === refIdx ? { ...r, ...patch } : r,
+              ),
+            }
             : t,
         ),
         enums,
@@ -377,19 +389,19 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                references: refs.map((r, i) =>
-                  i === refIdx
-                    ? {
-                        ...r,
-                        referencedTable: newTableName,
-                        referencedColumns: ref.localColumns.map(
-                          () => targetCol.name,
-                        ),
-                      }
-                    : r,
-                ),
-              }
+              ...t,
+              references: refs.map((r, i) =>
+                i === refIdx
+                  ? {
+                    ...r,
+                    referencedTable: newTableName,
+                    referencedColumns: ref.localColumns.map(
+                      () => targetCol.name,
+                    ),
+                  }
+                  : r,
+              ),
+            }
             : t,
         ),
         enums,
@@ -411,11 +423,11 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                references: refs.map((r, i) =>
-                  i === refIdx ? { ...r, localColumns: updated } : r,
-                ),
-              }
+              ...t,
+              references: refs.map((r, i) =>
+                i === refIdx ? { ...r, localColumns: updated } : r,
+              ),
+            }
             : t,
         ),
         enums,
@@ -437,11 +449,11 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                references: refs.map((r, i) =>
-                  i === refIdx ? { ...r, referencedColumns: updated } : r,
-                ),
-              }
+              ...t,
+              references: refs.map((r, i) =>
+                i === refIdx ? { ...r, referencedColumns: updated } : r,
+              ),
+            }
             : t,
         ),
         enums,
@@ -473,17 +485,17 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                references: refs.map((r, i) =>
-                  i === refIdx
-                    ? {
-                        ...r,
-                        localColumns: [...r.localColumns, nextLocal],
-                        referencedColumns: [...r.referencedColumns, nextForeign],
-                      }
-                    : r,
-                ),
-              }
+              ...t,
+              references: refs.map((r, i) =>
+                i === refIdx
+                  ? {
+                    ...r,
+                    localColumns: [...r.localColumns, nextLocal],
+                    referencedColumns: [...r.referencedColumns, nextForeign],
+                  }
+                  : r,
+              ),
+            }
             : t,
         ),
         enums,
@@ -514,21 +526,21 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                references: refs.map((r, i) =>
-                  i === refIdx
-                    ? {
-                        ...r,
-                        localColumns: r.localColumns.filter(
-                          (_, j) => j !== pairIdx,
-                        ),
-                        referencedColumns: r.referencedColumns.filter(
-                          (_, j) => j !== pairIdx,
-                        ),
-                      }
-                    : r,
-                ),
-              }
+              ...t,
+              references: refs.map((r, i) =>
+                i === refIdx
+                  ? {
+                    ...r,
+                    localColumns: r.localColumns.filter(
+                      (_, j) => j !== pairIdx,
+                    ),
+                    referencedColumns: r.referencedColumns.filter(
+                      (_, j) => j !== pairIdx,
+                    ),
+                  }
+                  : r,
+              ),
+            }
             : t,
         ),
         enums,
@@ -557,9 +569,9 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         tables.map((t) =>
           t.name === tableName
             ? {
-                ...t,
-                checks: (t.checks ?? []).map((c, i) => (i === idx ? expr : c)),
-              }
+              ...t,
+              checks: (t.checks ?? []).map((c, i) => (i === idx ? expr : c)),
+            }
             : t,
         ),
         enums,
@@ -629,11 +641,11 @@ export const useSchemaActions = (schema: Schema, token: string | undefined) => {
         enums.map((e) =>
           e.name === enumName
             ? {
-                ...e,
-                options: (e.options ?? []).map((v) =>
-                  v === oldName ? trimmed : v,
-                ),
-              }
+              ...e,
+              options: (e.options ?? []).map((v) =>
+                v === oldName ? trimmed : v,
+              ),
+            }
             : e,
         ),
       );

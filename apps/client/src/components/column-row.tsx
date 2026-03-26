@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { type Socket } from "socket.io-client";
 
 import { useSchemaActions } from "@/hooks/useSchemaActions";
 import { normalizeIdentifier } from "@/lib/schema-to-sql";
@@ -35,6 +36,7 @@ type ColumnRowProps = {
   pkColumns: Set<string>;
   fkLocalColumns: Set<string>;
   enumNames: string[];
+  socket: Socket | undefined;
 };
 
 export function ColumnRow({
@@ -45,9 +47,10 @@ export function ColumnRow({
   pkColumns,
   fkLocalColumns,
   enumNames,
+  socket,
 }: ColumnRowProps) {
   const { updateColumn, deleteColumn, renameColumn } =
-    useSchemaActions(schema, token);
+    useSchemaActions(schema, token, socket);
 
   const [editingColumnName, setEditingColumnName] = useState(false);
   const [editingDefaultValue, setEditingDefaultValue] = useState(false);

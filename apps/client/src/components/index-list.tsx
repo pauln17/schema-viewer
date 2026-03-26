@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { type Socket } from "socket.io-client";
 
 import { useSchemaActions } from "@/hooks/useSchemaActions";
 import type { Schema, Table } from "@/types/schema";
 
-export function IndexList({ table, schema, token }: { table: Table; schema: Schema; token: string | undefined }) {
-  const { addIndex, deleteIndex, addIndexColumn, removeIndexColumn } = useSchemaActions(schema, token);
+export function IndexList({ table, schema, token, socket }: { table: Table; schema: Schema; token: string | undefined, socket: Socket | undefined }) {
+  const { addIndex, deleteIndex, addIndexColumn, removeIndexColumn } = useSchemaActions(schema, token, socket);
 
   const [expandedIndex, setExpandedIndex] = useState<string | null>(null);
 

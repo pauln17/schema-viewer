@@ -26,7 +26,7 @@ export const useCreateSchema = (token: string | undefined) => {
         },
         onSuccess: (data) => {
             queryClient.setQueryData(["schema", token], {
-                name: "Untitled",
+                name: "",
                 definition: { tables: [], enums: [] },
             });
             router.push(`/editor/${data.token}`);
