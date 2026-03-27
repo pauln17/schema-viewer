@@ -42,7 +42,7 @@ export default function Root() {
             </span>
           </Link>
           <Link
-            href="/editor?parse=true"
+            href="/editor"
             className="flex flex-col items-center gap-4 rounded-xl border-2 border-neutral-500 px-12 py-10 transition-colors hover:border-neutral-300 cursor-pointer"
           >
             <div className="flex h-20 items-center justify-center">
