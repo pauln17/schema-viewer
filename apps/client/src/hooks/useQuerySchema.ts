@@ -24,11 +24,6 @@ export const useQuerySchema = (token: string | undefined) => {
                 return data;
             } catch (e) {
                 toast.error(`Server Error: ${e instanceof Error ? e.message : "Unknown Error"}`, {
-                    position: "bottom-center",
-                    autoClose: 3000,
-                    pauseOnHover: false,
-                    closeOnClick: true,
-                    theme: "dark",
                     onClose: () => router.push("/editor"),
                 });
             }

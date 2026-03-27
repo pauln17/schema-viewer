@@ -42,25 +42,13 @@ export function SidebarFooter({ schema, token }: { schema: Schema; token: string
             const file = input.files?.[0];
             if (!file) return;
             if (!file.name.toLowerCase().endsWith(".sql")) {
-              toast.warn("Invalid File Type", {
-                position: "bottom-center",
-                autoClose: 3000,
-                pauseOnHover: false,
-                closeOnClick: true,
-                theme: "dark",
-              });
+              toast.warn("Invalid File Type");
               input.value = "";
               return;
             }
             const MAX_SIZE_BYTES = 5 * 1024 * 1024;
             if (file.size > MAX_SIZE_BYTES) {
-              toast.error("Max 5MB Allowed", {
-                position: "bottom-center",
-                autoClose: 3000,
-                pauseOnHover: false,
-                closeOnClick: true,
-                theme: "dark",
-              });
+              toast.error("Max 5MB Allowed");
               input.value = "";
               return;
             }
@@ -72,13 +60,7 @@ export function SidebarFooter({ schema, token }: { schema: Schema; token: string
                 input.value = "";
               } catch (err) {
                 input.value = "";
-                toast.error("Invalid SQL", {
-                  position: "bottom-center",
-                  autoClose: 3000,
-                  pauseOnHover: false,
-                  closeOnClick: true,
-                  theme: "dark",
-                });
+                toast.error("Invalid SQL");
                 console.error(err);
               }
             };
@@ -90,13 +72,7 @@ export function SidebarFooter({ schema, token }: { schema: Schema; token: string
           className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/[0.06] text-xs text-neutral-300 hover:bg-white/[0.1] hover:text-white transition-colors cursor-pointer"
           onClick={() => {
             if (tables.length === 0 && enums.length === 0) {
-              toast.warn("Empty Database", {
-                position: "bottom-center",
-                autoClose: 3000,
-                pauseOnHover: false,
-                closeOnClick: true,
-                theme: "dark",
-              });
+              toast.warn("Empty Database");
               return;
             }
             try {
@@ -118,13 +94,7 @@ export function SidebarFooter({ schema, token }: { schema: Schema; token: string
               a.click();
               URL.revokeObjectURL(url);
             } catch (err) {
-              toast.error("Export Schema Failed", {
-                position: "bottom-center",
-                autoClose: 3000,
-                pauseOnHover: false,
-                closeOnClick: true,
-                theme: "dark",
-              });
+              toast.error("Export Schema Failed");
               console.error(err);
             }
           }}

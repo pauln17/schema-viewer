@@ -49,7 +49,14 @@ export default function Editor() {
 
   return (
     <>
-      <ToastContainer theme="dark" />
+      <ToastContainer
+        position="bottom-center"
+        autoClose={3000}
+        closeOnClick
+        pauseOnHover={false}
+        pauseOnFocusLoss={false}
+        theme="dark"
+      />
       <div className="flex w-screen h-screen overflow-hidden flex-col">
         <EditorHeader
           schema={schema}

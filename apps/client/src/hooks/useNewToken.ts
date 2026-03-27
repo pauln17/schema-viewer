@@ -24,13 +24,7 @@ export const useNewToken = (token: string | undefined) => {
             router.push(`/editor/${newToken}`);
         },
         onError: (error) => {
-            toast.error(`Regenerate Token Failed: ${error instanceof Error ? error.message : "Unknown Error"}`, {
-                position: "bottom-center",
-                autoClose: 3000,
-                pauseOnHover: false,
-                closeOnClick: true,
-                theme: "dark",
-            });
+            toast.error(`Regenerate Token Failed: ${error instanceof Error ? error.message : "Unknown Error"}`);
         },
     });
 

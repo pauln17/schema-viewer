@@ -33,12 +33,7 @@ export const useCreateSchema = (token: string | undefined) => {
             router.push(`/editor/${data.token}`);
         },
         onError: (error) => {
-            toast.error(`Create Schema Failed: ${error instanceof Error ? error.message : "Unknown Error"}`, {
-                position: "bottom-center",
-                autoClose: 3000,
-                pauseOnHover: false,
-                closeOnClick: true,
-                theme: "dark",
+            toast.error(`${error instanceof Error ? error.message : "Unknown Error"}`, {
                 onClose: () => router.push("/editor"),
             });
         },

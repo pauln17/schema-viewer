@@ -25,13 +25,7 @@ export const useUpdateSchema = (token: string | undefined) => {
             queryClient.setQueryData(["schema", token], data);
         },
         onError: (error) => {
-            toast.error(`Update Schema Failed: ${error instanceof Error ? error.message : "Unknown Error"}`, {
-                position: "bottom-center",
-                autoClose: 3000,
-                pauseOnHover: false,
-                closeOnClick: true,
-                theme: "dark",
-            });
+            toast.error(`${error instanceof Error ? error.message : "Unknown Error"}`);
         },
     });
 
