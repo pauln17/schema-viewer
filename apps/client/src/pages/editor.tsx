@@ -8,7 +8,6 @@ import {
 } from "@xyflow/react";
 import { useRouter } from "next/router";
 import { useEffect, useMemo } from "react";
-import { ToastContainer } from "react-toastify";
 import { io } from "socket.io-client";
 
 import EditorHeader from "@/components/editor-header";
@@ -49,14 +48,6 @@ export default function Editor() {
 
   return (
     <>
-      <ToastContainer
-        position="bottom-center"
-        autoClose={3000}
-        closeOnClick
-        pauseOnHover={false}
-        pauseOnFocusLoss={false}
-        theme="dark"
-      />
       <div className="flex w-screen h-screen overflow-hidden flex-col">
         <EditorHeader
           schema={schema}

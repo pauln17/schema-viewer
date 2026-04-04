@@ -7,15 +7,28 @@ import { useNewToken } from "@/hooks/useNewToken";
 import { useSchemaActions } from "@/hooks/useSchemaActions";
 import { useUpdateSchema } from "@/hooks/useUpdateSchema";
 import type { Schema } from "@/types/schema";
+import { useDeleteSchema } from "@/hooks/useDeleteSchema";
 
-export default function EditorHeader({ schema, token, socket }: { schema: Schema; token: string | undefined, socket: Socket | undefined }) {
+export default function EditorHeader({
+  schema,
+  token,
+  socket,
+}: {
+  schema: Schema;
+  token: string | undefined;
+  socket: Socket | undefined;
+}) {
   const { renameSchema } = useSchemaActions(schema, token, socket);
-  const { updateSchema, isUpdating } = useUpdateSchema(token);
   const { createSchema, isCreating } = useCreateSchema(token);
+  const { updateSchema, isUpdating } = useUpdateSchema(token);
+  const { deleteSchema, isDeleting } = useDeleteSchema(token);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/editor/${token}` : "";
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/editor/${token}`
+      : "";
 
   const { newToken, isGenerating } = useNewToken(token);
 
@@ -43,7 +56,7 @@ export default function EditorHeader({ schema, token, socket }: { schema: Schema
           type="text"
           value={schema.name}
           onChange={(e) => renameSchema(e.target.value)}
-          placeholder={'Title'}
+          placeholder={"Title"}
           maxLength={15}
           className="w-full max-w-48 min-w-0 py-1 pl-0 pr-2 text-[11px] font-semibold text-neutral-400 uppercase tracking-widest bg-transparent border-none outline-none focus:outline-none focus:ring-0 placeholder:text-neutral-500 text-left cursor-text"
         />
@@ -53,16 +66,36 @@ export default function EditorHeader({ schema, token, socket }: { schema: Schema
           className="hidden sm:flex p-2.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.06] cursor-pointer transition-colors"
           title="Undo"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a5 5 0 015 5v2M3 10l4-4m-4 4l4 4" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 10h10a5 5 0 015 5v2M3 10l4-4m-4 4l4 4"
+            />
           </svg>
         </button>
         <button
           className="hidden sm:flex p-2.5 rounded-lg text-neutral-400 hover:text-white hover:bg-white/[0.06] cursor-pointer transition-colors"
           title="Redo"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a5 5 0 00-5 5v2m15-7l-4-4m4 4l-4 4" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 10H11a5 5 0 00-5 5v2m15-7l-4-4m4 4l-4 4"
+            />
           </svg>
         </button>
         <div className="hidden sm:block w-px h-5 bg-white/[0.1] mx-1" />
@@ -70,17 +103,24 @@ export default function EditorHeader({ schema, token, socket }: { schema: Schema
           className="flex items-center justify-center gap-1 sm:gap-1.5 p-2 sm:px-3 sm:py-2 rounded-lg text-sm font-medium sm:min-w-[5rem] text-white bg-blue-600 hover:bg-blue-500 cursor-pointer transition-colors disabled:opacity-80"
           title={token ? "Save Changes" : "Save and Get Shareable Link"}
           onClick={
-            token ? () => updateSchema() : () => {
-              createSchema();
-              localStorage.setItem("OPEN_SHARE_AFTER_SAVE", "true");
-            }}
+            token
+              ? () => updateSchema()
+              : () => {
+                  createSchema();
+                  localStorage.setItem("OPEN_SHARE_AFTER_SAVE", "true");
+                }
+          }
           disabled={isUpdating || isCreating}
         >
           {isUpdating || isCreating ? (
             <span className="w-3.5 h-3.5 shrink-0 animate-spin rounded-full border-2 border-white border-t-transparent" />
           ) : (
             <>
-              <svg className="w-5 h-5 shrink-0" viewBox="0 0 640 640" fill="currentColor">
+              <svg
+                className="w-5 h-5 shrink-0"
+                viewBox="0 0 640 640"
+                fill="currentColor"
+              >
                 <path d="M160 144c-8.8 0-16 7.2-16 16v320c0 8.8 7.2 16 16 16h320c8.8 0 16-7.2 16-16V237.3c0-4.2-1.7-8.3-4.7-11.3L416 150.6V240c0 17.7-14.3 32-32 32H224c-17.7 0-32-14.3-32-32v-96zm80 0v80h128v-80zM96 160c0-35.3 28.7-64 64-64h242.7c17 0 33.3 6.7 45.3 18.7l77.3 77.3c12 12 18.7 28.3 18.7 45.3V480c0 35.3-28.7 64-64 64H160c-35.3 0-64-28.7-64-64zm160 224c0-35.3 28.7-64 64-64s64 28.7 64 64s-28.7 64-64 64s-64-28.7-64-64" />
               </svg>
               <span className="hidden sm:inline">Save</span>
@@ -91,14 +131,26 @@ export default function EditorHeader({ schema, token, socket }: { schema: Schema
           className="flex items-center gap-1 sm:gap-1.5 p-2 sm:px-3 sm:py-2 rounded-lg text-sm text-neutral-300 border border-white/[0.1] hover:text-white hover:bg-white/[0.06] hover:border-white/[0.2] cursor-pointer transition-colors"
           title="Share"
           onClick={
-            token ? () => setIsShareOpen(true) : () => {
-              createSchema();
-              localStorage.setItem("OPEN_SHARE_AFTER_SAVE", "true");
-            }
+            token
+              ? () => setIsShareOpen(true)
+              : () => {
+                  createSchema();
+                  localStorage.setItem("OPEN_SHARE_AFTER_SAVE", "true");
+                }
           }
         >
-          <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          <svg
+            className="w-5 h-5 shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+            />
           </svg>
           <span className="hidden sm:inline">Share</span>
         </button>
@@ -113,7 +165,7 @@ export default function EditorHeader({ schema, token, socket }: { schema: Schema
           </div>
           <div className="space-y-2">
             <label className="block text-[11px] font-medium text-neutral-400 uppercase tracking-wide">
-              Share link
+              Share Link
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -131,18 +183,45 @@ export default function EditorHeader({ schema, token, socket }: { schema: Schema
               </button>
             </div>
           </div>
-          <div className="pt-1 space-y-1.5">
-            <button
-              type="button"
-              className="w-full h-9 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              disabled={isGenerating}
-              onClick={() => newToken()}
-            >
-              {isGenerating ? "Generating…" : "Generate New Link"}
-            </button>
-            <p className="text-[11px] text-neutral-500">
-              Generating a new link will invalidate the previous one.
-            </p>
+          <div className="pt-1 space-y-4">
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                className="w-full h-9 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                disabled={isGenerating}
+                onClick={() => newToken()}
+              >
+                {isGenerating ? "Generating…" : "Generate New Link"}
+              </button>
+              <p className="text-[11px] text-neutral-500 leading-relaxed">
+                Generating a new link will invalidate the previous one.
+              </p>
+            </div>
+            <div className="border-t border-white/[0.06] pt-4 space-y-1.5">
+              <button
+                type="button"
+                title="Revoke Link"
+                className="w-full h-9 flex items-center justify-center gap-1.5 text-xs font-medium rounded-md border border-red-500/25 text-red-300/90 bg-red-500/[0.06] hover:bg-red-500/12 hover:border-red-500/35 hover:text-red-200 cursor-pointer transition-colors"
+                onClick={() => deleteSchema()}
+                disabled={isDeleting || !token}
+              >
+                <svg
+                  className="w-3.5 h-3.5 shrink-0 opacity-90"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                Revoke Link
+              </button>
+            </div>
           </div>
         </div>
       </ShareModal>
